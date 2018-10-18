@@ -1,0 +1,27 @@
+buildscript {
+  repositories {
+    jcenter()
+    mavenLocal()
+    maven {url 'http://developer.marklogic.com/maven2/'}
+  }
+  dependencies {
+    classpath 'com.marklogic:ml-data-hub:4.0.1.1'
+  }
+}
+
+
+apply plugin: 'java'
+apply plugin: 'com.marklogic.ml-data-hub'
+
+repositories {
+    jcenter()
+    mavenCentral()
+    mavenLocal()
+    maven {url 'http://developer.marklogic.com/maven2/'}
+}
+
+dependencies {
+    compile 'com.marklogic:marklogic-data-hub:4.0.1.1'
+}
+
+
