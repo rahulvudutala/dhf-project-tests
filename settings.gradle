@@ -1,0 +1,3 @@
+rootProject.name = 'dhf-test-projects'
+include ':empty-proeject'
+

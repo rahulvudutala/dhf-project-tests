@@ -1,0 +1,30 @@
+allprojects {
+    task resolveAllDependencies {
+        doLast {
+            configurations.all {
+                if (it.isCanBeResolved()) {
+                    it.resolve()
+                }
+            }
+        }
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+        jcenter()
+        maven {url 'http://developer.marklogic.com/maven2/'}
+    }
+
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.5'
+}
