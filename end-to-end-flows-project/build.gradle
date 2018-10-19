@@ -23,10 +23,12 @@ ext.junitPlatformVersion = '1.0.0'
 ext.junitJupiterVersion  = '5.0.0'
 
 dependencies {
-    // this allows you to write custom java code that depends
-    // on the Data Hub Framework library
     compile 'com.marklogic:marklogic-data-hub:4.0.1'
     compile 'com.marklogic:marklogic-xcc:9.0.4'
+    compile("com.marklogic:mlcp-util:0.3.0")
+    compile("com.marklogic:mlcp:9.0.7") {
+        exclude group: 'org.apache.avro', module: 'avro-tools'
+    }
     // JUnit Jupiter API and TestEngine implementation
     testCompile "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
     testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
@@ -41,9 +43,5 @@ dependencies {
     testCompile 'org.easymock:easymock:3.4'
     testCompile 'ch.qos.logback:logback-classic:1.1.11'
     testCompile 'org.slf4j:log4j-over-slf4j:1.7.13'
-    compile("com.marklogic:mlcp-util:0.3.0")
-    compile("com.marklogic:mlcp:9.0.7") {
-        exclude group: 'org.apache.avro', module: 'avro-tools'
-    }
 }
 
