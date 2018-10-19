@@ -1,3 +1,4 @@
 rootProject.name = 'dhf-test-projects'
 include ':empty-project'
 include ':non-default-values-project'
+include ':end-to-end-flows-project'

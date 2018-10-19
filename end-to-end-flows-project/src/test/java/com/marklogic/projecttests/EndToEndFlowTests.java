@@ -32,9 +32,10 @@ import com.marklogic.hub.scaffold.Scaffolding;
 import com.marklogic.hub.util.FileUtil;
 import com.marklogic.hub.util.MlcpRunner;
 import com.marklogic.hub.validate.EntitiesValidator;
-import org.apache.commons.io.FileUtils;
 import org.custommonkey.xmlunit.XMLUnit;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -102,7 +103,7 @@ class FinalCounts {
 @RunWith(JUnitPlatform.class)
 public class EndToEndFlowTests extends HubTestBase {
     private static final String ENTITY = "e2eentity";
-    private static Path projectDir = Paths.get(".", "ye-olde-project");
+    private static Path projectDir = Paths.get(".");
     private static final int TEST_SIZE = 500;
     private static final int BATCH_SIZE = 10;
     private FlowManager flowManager;
@@ -118,12 +119,12 @@ public class EndToEndFlowTests extends HubTestBase {
 
     @BeforeEach
     public void setupEach() {
-    	createProjectDir();
         clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME, HubConfig.DEFAULT_JOB_NAME);
 
         enableTracing();
         enableDebugging();
 
+        XMLUnit.setIgnoreWhitespace(true);
 
         flowManager = FlowManager.create(getHubFlowRunnerConfig());
         flowRunnerDataMovementManager = flowRunnerClient.newDataMovementManager();
@@ -131,10 +132,7 @@ public class EndToEndFlowTests extends HubTestBase {
         scaffolding = Scaffolding.create(projectDir.toString(), stagingClient);
         scaffolding.createEntity(ENTITY);
 
-
-        flowManager = FlowManager.create(getHubFlowRunnerConfig());
-
-        //installUserModules(getHubAdminConfig(), true);
+        installUserModules(getHubAdminConfig(), true);
     }
 
 
@@ -147,9 +145,7 @@ public class EndToEndFlowTests extends HubTestBase {
 
     @TestFactory
     public List<DynamicTest> generateHasASpaceTests() {
-        allCombos((codeFormat, dataFormat, flowType, useEs) -> {
-           createFlow("has a space ", codeFormat, dataFormat, flowType, useEs, null);
-        });
+
         List<DynamicTest> tests = new ArrayList<>();
         allCombos((codeFormat, dataFormat, flowType, useEs) -> {
             String prefix = "has a space ";
@@ -184,11 +180,6 @@ public class EndToEndFlowTests extends HubTestBase {
 
     @TestFactory
     public List<DynamicTest> generateExtraPluginTests() {
-        createFlows("extra-plugin", (codeFormat, dataFormat, flowType, srcDir, flowDir, useES) -> {
-            copyFile(srcDir + "main-" + flowType.toString() + "." + codeFormat.toString(), flowDir.resolve("main." + codeFormat.toString()));
-            copyFile(srcDir + "extra-plugin." + codeFormat.toString(), flowDir.resolve("extra-plugin." + codeFormat.toString()));
-        });
-
         List<DynamicTest> tests = new ArrayList<>();
         allCombos((codeFormat, dataFormat, flowType, useEs) -> {
             String prefix = "extra-plugin";
@@ -291,13 +282,6 @@ public class EndToEndFlowTests extends HubTestBase {
 
     @TestFactory
     public List<DynamicTest> generateTriplesArrayTests() {
-        allCombos((codeFormat, dataFormat, flowType, useEs) -> {
-            if (codeFormat.equals(CodeFormat.XQUERY)) {
-                createFlow("triples-array", codeFormat, dataFormat, flowType, useEs, (codeFormat1, dataFormat1, flowType1, srcDir, flowDir, useEs2) -> {
-                    copyFile(srcDir + "triples-json-array.xqy", flowDir.resolve("triples.xqy"));
-                });
-            }
-        });
         List<DynamicTest> tests = new ArrayList<>();
         allCombos((codeFormat, dataFormat, flowType, useEs) -> {
             String prefix = "triples-array";
@@ -333,16 +317,6 @@ public class EndToEndFlowTests extends HubTestBase {
 
     @TestFactory
     public List<DynamicTest> generateWithErrorTests() {
-        createFlows("with-error", (codeFormat, dataFormat, flowType, srcDir, flowDir, useES) -> {
-            copyFile(srcDir + "main-" + flowType.toString() + "." + codeFormat.toString(), flowDir.resolve("main." + codeFormat.toString()));
-            if (useES) {
-                copyFile(srcDir + "es-content-" + flowType.toString() + "-" + dataFormat.toString() + "." + codeFormat.toString(), flowDir.resolve("content." + codeFormat.toString()));
-                copyFile(srcDir + "es-headers" + "." + codeFormat.toString(), flowDir.resolve("headers." + codeFormat.toString()));
-                copyFile(srcDir + "es-triples" + "." + codeFormat.toString(), flowDir.resolve("triples." + codeFormat.toString()));
-                copyFile(srcDir + "es-writer" + "." + codeFormat.toString(), flowDir.resolve("writer." + codeFormat.toString()));
-            }
-            copyFile(srcDir + "extra-plugin." + codeFormat.toString(), flowDir.resolve("extra-plugin." + codeFormat.toString()));
-        });
         List<DynamicTest> tests = new ArrayList<>();
         allCombos(((codeFormat, dataFormat, flowType, useEs) -> {
             String prefix = "with-error";
@@ -407,13 +381,6 @@ public class EndToEndFlowTests extends HubTestBase {
             String prefix = "validation-no-errors";
             String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
             tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                // clear out the previous flows from above
-                //FileUtils.deleteDirectory(entityDir.resolve("input").toFile());
-                //FileUtils.deleteDirectory(entityDir.resolve("harmonize").toFile());
-
-                createFlow(prefix, codeFormat, dataFormat, flowType, useEs, null);
-                clearUserModules();
-                installUserModules(getHubAdminConfig(), true);
 
                 JsonNode actual = validateUserModules();
 
@@ -421,7 +388,6 @@ public class EndToEndFlowTests extends HubTestBase {
                 JSONAssert.assertEquals(expected, toJsonString(actual), true);
 
                 Path flowDir = entityDir.resolve(flowType.toString()).resolve(flowName);
-                //FileUtils.deleteDirectory(flowDir.toFile());
             }));
         }));
 
@@ -429,15 +395,6 @@ public class EndToEndFlowTests extends HubTestBase {
             String prefix = "validation-content-errors";
             String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
             tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                // clear out the previous flows from above
-                ////FileUtils.deleteDirectory(entityDir.resolve("input").toFile());
-                //FileUtils.deleteDirectory(entityDir.resolve("harmonize").toFile());
-
-                createFlow(prefix, codeFormat, dataFormat, flowType, useEs, (codeFormat1, dataFormat1, flowType1, srcDir, flowDir, useEs1) -> {
-                    copyFile(srcDir + "content-syntax-error." + codeFormat1.toString(), flowDir.resolve("content." + codeFormat1.toString()));
-                });
-                clearUserModules();
-                installUserModules(getHubAdminConfig(), true);
                 JsonNode actual = validateUserModules();
 
                 if (codeFormat.equals(CodeFormat.JAVASCRIPT)) {
@@ -450,7 +407,6 @@ public class EndToEndFlowTests extends HubTestBase {
                 }
 
                 Path flowDir = entityDir.resolve(flowType.toString()).resolve(flowName);
-                //FileUtils.deleteDirectory(flowDir.toFile());
             }));
         }));
         return tests;
@@ -466,15 +422,6 @@ public class EndToEndFlowTests extends HubTestBase {
             String prefix = "validation-headers-errors";
             String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
             tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                // clear out the previous flows from above
-                //FileUtils.deleteDirectory(entityDir.resolve("input").toFile());
-                //FileUtils.deleteDirectory(entityDir.resolve("harmonize").toFile());
-
-                createFlow(prefix, codeFormat, dataFormat, flowType, useEs, (codeFormat1, dataFormat1, flowType1, srcDir, flowDir, useEs1) -> {
-                    copyFile(srcDir + "headers-syntax-error." + codeFormat.toString(), flowDir.resolve("headers." + codeFormat.toString()));
-                });
-                clearUserModules();
-                installUserModules(getHubAdminConfig(), true);
                 JsonNode actual = validateUserModules();
                 if (codeFormat.equals(CodeFormat.JAVASCRIPT)) {
                     String expected = "{\"errors\":{\"e2eentity\":{\"" + flowName + "\":{\"headers\":{\"msg\":\"JS-JAVASCRIPT: =-00=--\\\\8\\\\sthifalkj;; -- Error running JavaScript request: SyntaxError: Unexpected token =\",\"uri\":\"/entities/e2eentity/" + flowType.toString() + "/" + flowName + "/headers.sjs\",\"line\":16,\"column\":2}}}}}";
@@ -486,8 +433,6 @@ public class EndToEndFlowTests extends HubTestBase {
                     JSONAssert.assertEquals(expected, toJsonString(actual), true);
                 }
 
-                Path flowDir = entityDir.resolve(flowType.toString()).resolve(flowName);
-                //FileUtils.deleteDirectory(flowDir.toFile());
             }));
         }));
 
@@ -495,15 +440,6 @@ public class EndToEndFlowTests extends HubTestBase {
             String prefix = "validation-triples-errors";
             String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
             tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                // clear out the previous flows from above
-                ////FileUtils.deleteDirectory(entityDir.resolve("input").toFile());
-                //FileUtils.deleteDirectory(entityDir.resolve("harmonize").toFile());
-
-                createFlow(prefix, codeFormat, dataFormat, flowType, useEs, (codeFormat1, dataFormat1, flowType1, srcDir, flowDir, useEs1) -> {
-                    copyFile(srcDir + "triples-syntax-error." + codeFormat.toString(), flowDir.resolve("triples." + codeFormat.toString()));
-                });
-                clearUserModules();
-                installUserModules(getHubAdminConfig(), true);
                 JsonNode actual = validateUserModules();
                 if (codeFormat.equals(CodeFormat.JAVASCRIPT)) {
                     String expected = "{\"errors\":{\"e2eentity\":{\"" + flowName + "\":{\"triples\":{\"msg\":\"JS-JAVASCRIPT: =-00=--\\\\8\\\\sthifalkj;; -- Error running JavaScript request: SyntaxError: Unexpected token =\",\"uri\":\"/entities/e2eentity/" + flowType.toString() + "/" + flowName + "/triples.sjs\",\"line\":16,\"column\":2}}}}}";
@@ -516,7 +452,6 @@ public class EndToEndFlowTests extends HubTestBase {
                 }
 
                 Path flowDir = entityDir.resolve(flowType.toString()).resolve(flowName);
-                //FileUtils.deleteDirectory(flowDir.toFile());
             }));
         }));
 
@@ -524,13 +459,6 @@ public class EndToEndFlowTests extends HubTestBase {
             String prefix = "validation-main-errors";
             String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
             tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                // clear out the previous flows from above
-                //FileUtils.deleteDirectory(entityDir.resolve("input").toFile());
-                //FileUtils.deleteDirectory(entityDir.resolve("harmonize").toFile());
-
-                createFlow(prefix, codeFormat, dataFormat, flowType, useEs, (codeFormat1, dataFormat1, flowType1, srcDir, flowDir, useEs1) -> {
-                    copyFile(srcDir + "main-syntax-error." + codeFormat.toString(), flowDir.resolve("main." + codeFormat.toString()));
-                });
                 clearUserModules();
                 installUserModules(getHubAdminConfig(), true);
                 JsonNode actual = validateUserModules();
@@ -544,7 +472,6 @@ public class EndToEndFlowTests extends HubTestBase {
                 JSONAssert.assertEquals(expected, toJsonString(actual), true);
 
                 Path flowDir = entityDir.resolve(flowType.toString()).resolve(flowName);
-                //FileUtils.deleteDirectory(flowDir.toFile());
             }));
         }));
 
@@ -554,15 +481,6 @@ public class EndToEndFlowTests extends HubTestBase {
                 String prefix = "validation-collector-errors";
                 String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
                 tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                    // clear out the previous flows from above
-                    //FileUtils.deleteDirectory(entityDir.resolve("input").toFile());
-                    //FileUtils.deleteDirectory(entityDir.resolve("harmonize").toFile());
-
-                    createFlow(prefix, codeFormat, dataFormat, flowType, useEs, (codeFormat1, dataFormat1, flowType1, srcDir, flowDir, useEs1) -> {
-                        copyFile(srcDir + "collector-syntax-error." + codeFormat.toString(), flowDir.resolve("collector." + codeFormat.toString()));
-                    });
-                    clearUserModules();
-                    installUserModules(getHubAdminConfig(), true);
                     JsonNode actual = validateUserModules();
                     if (codeFormat.equals(CodeFormat.JAVASCRIPT)) {
                         String expected = "{\"errors\":{\"e2eentity\":{\"" + flowName + "\":{\"collector\":{\"msg\":\"JS-JAVASCRIPT: =-00=--\\\\8\\\\sthifalkj;; -- Error running JavaScript request: SyntaxError: Unexpected token =\",\"uri\":\"/entities/e2eentity/" + flowType.toString() + "/" + flowName + "/collector.sjs\",\"line\":13,\"column\":2}}}}}";
@@ -578,7 +496,6 @@ public class EndToEndFlowTests extends HubTestBase {
                     }
 
                     Path flowDir = entityDir.resolve(flowType.toString()).resolve(flowName);
-                    //FileUtils.deleteDirectory(flowDir.toFile());
                 }));
             }
         }));
@@ -588,15 +505,6 @@ public class EndToEndFlowTests extends HubTestBase {
                 String prefix = "validation-writer-errors";
                 String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
                 tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                    // clear out the previous flows from above
-                    //FileUtils.deleteDirectory(entityDir.resolve("input").toFile());
-                    //FileUtils.deleteDirectory(entityDir.resolve("harmonize").toFile());
-
-                    createFlow(prefix, codeFormat, dataFormat, flowType, useEs, (codeFormat1, dataFormat1, flowType1, srcDir, flowDir, useEs1) -> {
-                        copyFile(srcDir + "writer-syntax-error." + codeFormat.toString(), flowDir.resolve("writer." + codeFormat.toString()));
-                    });
-                    clearUserModules();
-                    installUserModules(getHubAdminConfig(), true);
                     JsonNode actual = validateUserModules();
                     String expected;
                     if (codeFormat.equals(CodeFormat.JAVASCRIPT)) {
@@ -607,7 +515,6 @@ public class EndToEndFlowTests extends HubTestBase {
                     JSONAssert.assertEquals(expected, toJsonString(actual), true);
 
                     Path flowDir = entityDir.resolve(flowType.toString()).resolve(flowName);
-                    //FileUtils.deleteDirectory(flowDir.toFile());
                 }));
             }
         }));
@@ -618,8 +525,6 @@ public class EndToEndFlowTests extends HubTestBase {
     // DHFPROD-767 (Github #882)
     @TestFactory
     public List<DynamicTest> generateExtranodesTests() {
-        createFlow("extra-nodes", CodeFormat.XQUERY, DataFormat.XML, FlowType.INPUT, false, (CreateFlowListener)null);
-        createFlow("extra-nodes", CodeFormat.JAVASCRIPT, DataFormat.XML, FlowType.INPUT, false, (CreateFlowListener)null);
         List<DynamicTest> tests = new ArrayList<>();
         allCombos((codeFormat, dataFormat, flowType, useEs) -> {
             String prefix = "extra-nodes";
@@ -647,10 +552,6 @@ public class EndToEndFlowTests extends HubTestBase {
 
     @TestFactory
     public List<DynamicTest> generateDefaultPluginsTests() {
-        createFlow("default-plugins", CodeFormat.JAVASCRIPT, DataFormat.XML, FlowType.INPUT, true, (CreateFlowListener)null);
-        createFlow("default-plugins", CodeFormat.XQUERY, DataFormat.JSON, FlowType.INPUT, true, (CreateFlowListener)null);
-        createFlow("default-plugins", CodeFormat.XQUERY, DataFormat.XML, FlowType.INPUT, true, (CreateFlowListener)null);
-        createFlow("default-plugins", CodeFormat.JAVASCRIPT, DataFormat.JSON, FlowType.INPUT, true, (CreateFlowListener)null);
         List<DynamicTest> tests = new ArrayList<>();
         allCombos((codeFormat, dataFormat, flowType, useEs) -> {
             String prefix = "default-plugins";
@@ -680,82 +581,6 @@ public class EndToEndFlowTests extends HubTestBase {
         return prefix + "-" + flowType.toString() + "-" + codeFormat.toString() + "-" + dataFormat.toString() + (useEs ? "-es" : "" );
     }
 
-    private void createLegacyFlow(String prefix, CodeFormat codeFormat, DataFormat dataFormat, FlowType flowType, boolean useEs) {
-
-        if (useEs) {
-            return;
-        }
-        String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
-        Path flowDir = projectDir.resolve("plugins").resolve("entities").resolve(ENTITY).resolve(flowType.toString()).resolve(flowName);
-
-        if (flowType.equals(FlowType.HARMONIZE)) {
-            flowDir.resolve("collector").toFile().mkdirs();
-            flowDir.resolve("writer").toFile().mkdirs();
-        }
-        flowDir.resolve("content").toFile().mkdirs();
-        flowDir.resolve("headers").toFile().mkdirs();
-        flowDir.resolve("triples").toFile().mkdirs();
-
-        String srcDir = "e2e-test/" + codeFormat.toString() + "-flow/";
-        if (flowType.equals(FlowType.HARMONIZE)) {
-            copyFile(srcDir + "collector." + codeFormat.toString(), flowDir.resolve("collector/collector." + codeFormat.toString()));
-            copyFile(srcDir + "writer-legacy." + codeFormat.toString(), flowDir.resolve("writer/writer." + codeFormat.toString()));
-        }
-
-        if (codeFormat.equals(CodeFormat.JAVASCRIPT)) {
-            copyFile(srcDir + "headers." + codeFormat.toString(), flowDir.resolve("headers/headers." + codeFormat.toString()));
-        }
-        else {
-            copyFile(srcDir + "headers-" + dataFormat.toString() + "." + codeFormat.toString(), flowDir.resolve("headers/headers." + codeFormat.toString()));
-        }
-        copyFile(srcDir + "content-" + flowType.toString() + "." + codeFormat.toString(), flowDir.resolve("content/content." + codeFormat.toString()));
-        copyFile(srcDir + "triples." + codeFormat.toString(), flowDir.resolve("triples/triples." + codeFormat.toString()));
-
-        copyFile("e2e-test/legacy-" + dataFormat.toString() + ".xml", flowDir.resolve("" + flowName + ".xml"));
-    }
-
-    private void create2xFlow(String prefix, CodeFormat codeFormat, DataFormat dataFormat, FlowType flowType, boolean useEs) {
-        if (useEs) {
-            return;
-        }
-        String flowName = getFlowName(prefix, codeFormat, dataFormat, flowType, useEs);
-        Path flowDir = projectDir.resolve("plugins").resolve("entities").resolve(ENTITY).resolve(flowType.toString()).resolve(flowName);
-
-        flowDir.toFile().mkdirs();
-
-        String srcDir = "e2e-test/" + codeFormat.toString() + "-flow/";
-        if (flowType.equals(FlowType.HARMONIZE)) {
-            copyFile(srcDir + "collector." + codeFormat.toString(), flowDir.resolve("collector." + codeFormat.toString()));
-            copyFile(srcDir + "writer-legacy." + codeFormat.toString(), flowDir.resolve("writer." + codeFormat.toString()));
-        }
-
-        if (codeFormat.equals(CodeFormat.JAVASCRIPT)) {
-            copyFile(srcDir + "headers." + codeFormat.toString(), flowDir.resolve("headers." + codeFormat.toString()));
-        }
-        else {
-            copyFile(srcDir + "headers-" + dataFormat.toString() + "." + codeFormat.toString(), flowDir.resolve("headers." + codeFormat.toString()));
-        }
-        copyFile(srcDir + "content-" + flowType.toString() + "." + codeFormat.toString(), flowDir.resolve("content." + codeFormat.toString()));
-        copyFile(srcDir + "triples." + codeFormat.toString(), flowDir.resolve("triples." + codeFormat.toString()));
-        copyFile(srcDir + "main-" + flowType.toString() + "-2x." + codeFormat.toString(), flowDir.resolve("main." + codeFormat.toString()));
-
-        Flow flow = FlowBuilder.newFlow()
-            .withEntityName(ENTITY)
-            .withName(flowName)
-            .withType(flowType)
-            .withCodeFormat(codeFormat)
-            .withDataFormat(dataFormat)
-            .build();
-
-        try {
-            FileWriter fw = new FileWriter(flowDir.resolve(flowName + ".properties").toFile());
-            flow.toProperties().store(fw, "");
-            fw.close();
-        }
-        catch(IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private void scaffoldFlow(String prefix, CodeFormat codeFormat, DataFormat dataFormat, FlowType flowType, boolean useEs) {
         Path entityDir = projectDir.resolve("plugins").resolve("entities").resolve(ENTITY);
@@ -925,7 +750,7 @@ public class EndToEndFlowTests extends HubTestBase {
             throw new RuntimeException(e);
         }
 
-        MlcpRunner mlcpRunner = new MlcpRunner(null, "com.marklogic.hub.util.MlcpMain", getHubFlowRunnerConfig(), flow, databaseClient, mlcpOptions, null);
+        MlcpRunner mlcpRunner = new MlcpRunner(null, "MlcpMain", getHubFlowRunnerConfig(), flow, databaseClient, mlcpOptions, null);
         mlcpRunner.setDatabase(databaseClient.getDatabase());
         mlcpRunner.start();
         try {

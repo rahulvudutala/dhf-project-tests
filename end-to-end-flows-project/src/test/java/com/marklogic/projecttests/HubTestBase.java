@@ -173,10 +173,6 @@ public class HubTestBase {
         return flowRunnerClient.newDocumentManager();
     }
 
-    protected void basicSetup() {
-        XMLUnit.setIgnoreWhitespace(true);
-        createProjectDir();
-    }
 
     protected void init() {
         try {
@@ -493,45 +489,6 @@ public class HubTestBase {
         return hubConfig;
     }
 
-    public void createProjectDir() {
-        createProjectDir(PROJECT_PATH);        
-    }
-
-    // this method creates a project dir and copies the gradle.properties in.
-    public void createProjectDir(String projectDirName) {
-        try {
-            File projectDir = new File(projectDirName);
-            if (!projectDir.isDirectory() || !projectDir.exists()) {
-                getDataHub().initProject();
-            }
-
-            // force module loads for new test runs.
-            File timestampDirectory = new File(projectDir + "/.tmp");
-            if ( timestampDirectory.exists() ) {
-                FileUtils.forceDelete(timestampDirectory);
-            }
-            File finalTimestampDirectory = new File( "build/ml-javaclient-util");
-            if ( finalTimestampDirectory.exists() ) {
-                FileUtils.forceDelete(finalTimestampDirectory);
-            }
-            Path devProperties = Paths.get(".").resolve("gradle.properties");
-            Path projectProperties = projectDir.toPath().resolve("gradle.properties");
-            FileUtils.copyFile(devProperties.toFile(), projectProperties.toFile());
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void deleteProjectDir() {
-        if (new File(PROJECT_PATH).exists()) {
-            try {
-                FileUtils.forceDelete(new File(PROJECT_PATH));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
     protected File getResourceFile(String resourceName) {
         return new File(HubTestBase.class.getClassLoader().getResource(resourceName).getFile());
     }
