@@ -20,8 +20,9 @@ package com.marklogic.gradle.integration.tests
 import java.nio.file.Path
 import java.nio.file.Paths
 
+import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.UnexpectedBuildFailure
-
+import com.marklogic.gradle.tests.helper.BaseTest
 import com.marklogic.hub.HubConfig
 
 import spock.lang.Shared
@@ -30,8 +31,6 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import static org.gradle.testkit.runner.TaskOutcome.FAILED
 
 class EndToEndTasksTest extends BaseTest {
-    
-//    File propertiesFile
     
     @Shared def result
     
@@ -42,9 +41,9 @@ class EndToEndTasksTest extends BaseTest {
         File mlConfigDir = new File(projectDir, HubConfig.USER_CONFIG_DIR)
         
         then:
-        pluginsDir.isDirectory() == true
-        hubConfigDir.isDirectory() == true
-        mlConfigDir.isDirectory() == true
+        pluginsDir.isDirectory() == false
+        hubConfigDir.isDirectory() == false
+        mlConfigDir.isDirectory() == false
         
         
         when: "hubInit task is run"
@@ -69,9 +68,9 @@ class EndToEndTasksTest extends BaseTest {
     
     def "hubCreateEntity task test"() {
         given:
-        File entitiesDir = new File(projectDir.toString(), "plugins", "entities")
-        File prodEntityDir = new File(entitiesDir.toString(), "my-new-unique-product-test-entity-1")
-        File destDir = new File(prodEntityDir, "my-new-unique-product-test-entity-1.entity.json")
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File prodEntityDir = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1").toFile()
+        File destDir = Paths.get(prodEntityDir.toString(), "my-new-unique-product-test-entity-1.entity.json").toFile()
         
         when: "entityName parameter is missing in the gradle command"
         result = runFailTask('hubCreateEntity')
@@ -100,11 +99,6 @@ class EndToEndTasksTest extends BaseTest {
         
         
         when: "entityName parameter is provided with duplicate value, the existing folder shouldn't be replaced"
-        propertiesFile << """
-            ext {
-                entityName=my-new-unique-Product-test-entity-1
-            }
-        """
         result = runTask('hubCreateEntity')
         
         then:

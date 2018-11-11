@@ -15,7 +15,7 @@
  *
  */
 
-package com.marklogic.gradle.integration.tests
+package com.marklogic.gradle.tests.helper
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -287,9 +287,14 @@ class BaseTest extends Specification {
     }
     
     def cleanupSpec() {
-        
+        FileUtils.forceDelete(Paths.get(projectDir, "gradle.properties").toFile())
+        FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
+        FileUtils.forceDelete(Paths.get(projectDir, "plugins").toFile())
+        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "hub-internal-config").toFile())
+        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-config").toFile())
+        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-modules").toFile())
+        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-schemas").toFile())
     }
-
 //    def setupSpec() {
 //        XMLUnit.setIgnoreWhitespace(true)
 //        testProjectDir.create()
