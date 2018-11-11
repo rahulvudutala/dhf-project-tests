@@ -33,3 +33,7 @@ ye-olde-project
 .bit
 .bitmap
 bit.json
+
+# ignoring ml-datahub-tests files
+ml-datahub-tests/bin
+ml-datahub-tests/build
