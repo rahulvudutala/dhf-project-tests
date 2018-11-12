@@ -19,6 +19,7 @@ package com.marklogic.gradle.tests.helper
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.marklogic.client.FailedRequestException
 import com.marklogic.client.document.DocumentManager
 import com.marklogic.client.eval.EvalResult
@@ -276,8 +277,19 @@ class BaseTest extends Specification {
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
     
-    def getPropertiesFile() {
+    void getPropertiesFile() {
         propertiesFile = new File(Paths.get(".").resolve("gradle.properties").toString())
+    }
+    
+    def addIndexInfo(String entityName) {
+        ObjectMapper mapper = new ObjectMapper();
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile();
+        File prodEntityDir = Paths.get(entitiesDir.toString(), entityName).toFile();
+        File destDir = Paths.get(prodEntityDir.toString(), entityName + ".entity.json").toFile();
+        JsonNode entity = getJsonResource(destDir.getAbsolutePath());
+        JsonNode entityNode = entity.get("definitions").get(entityName);
+        ((ObjectNode) entityNode).putArray("rangeIndex").add("ProductID");
+        mapper.writerWithDefaultPrettyPrinter().writeValue(destDir, entity);
     }
     
     def setupSpec() {
@@ -290,13 +302,10 @@ class BaseTest extends Specification {
         FileUtils.forceDelete(Paths.get(projectDir, "gradle.properties").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "plugins").toFile())
+        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "entity-config").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "hub-internal-config").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-config").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-modules").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-schemas").toFile())
     }
-//    def setupSpec() {
-//        XMLUnit.setIgnoreWhitespace(true)
-//        testProjectDir.create()
-//    }
 }
