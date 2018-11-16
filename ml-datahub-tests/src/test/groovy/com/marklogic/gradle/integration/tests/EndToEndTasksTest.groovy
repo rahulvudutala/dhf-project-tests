@@ -71,7 +71,11 @@ class EndToEndTasksTest extends BaseTest {
         given:
         File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
         File prodEntityDir = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1").toFile()
+        File orderEntityDir = Paths.get(entitiesDir.toString(), "my-new-unique-order-test-entity-1").toFile()
+        File custEntityDir = Paths.get(entitiesDir.toString(), "my-new-unique-customer-test-entity-1").toFile()
         File destDir = Paths.get(prodEntityDir.toString(), "my-new-unique-product-test-entity-1.entity.json").toFile()
+        File orderDestDir = Paths.get(prodEntityDir.toString(), "my-new-unique-order-test-entity-1.entity.json").toFile()
+        File custDestDir = Paths.get(prodEntityDir.toString(), "my-new-unique-customer-test-entity-1.entity.json").toFile()
 
 
         when: "entityName parameter is missing in the gradle command"
@@ -110,19 +114,33 @@ class EndToEndTasksTest extends BaseTest {
 
 
         when: "create other entities for the scenario"
-        println()
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-order-test-entity-1
+            }
+        """
+        runTask('hubCreateEntity')
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-customer-test-entity-1
+            }
+        """
+        runTask('hubCreateEntity')
 
         then:
-        println()
+        orderEntityDir.exists() == true
+        custEntityDir.exists() == true
+        copyResourceToFile("my-new-unique-order-test-entity-1.entity.json", orderDestDir)
+        copyResourceToFile("my-new-unique-customer-test-entity-1.entity.json", custDestDir)
     }
 
     def "hubSaveIndexes task test"() {
         given:
         File entityConfigDatabasesDir = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR, "databases").toFile()
-        File stagingFile = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR, "databases", 
-            HubConfig.STAGING_ENTITY_DATABASE_FILE).toFile()
-        File finalFile = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR, "databases", 
-            HubConfig.FINAL_ENTITY_DATABASE_FILE).toFile()
+        File stagingFile = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR, "databases",
+                HubConfig.STAGING_ENTITY_DATABASE_FILE).toFile()
+        File finalFile = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR, "databases",
+                HubConfig.FINAL_ENTITY_DATABASE_FILE).toFile()
         JsonNode stagingDatabaseIndexObj = null
         JsonNode finalDatabaseIndexObj = null
         JsonNode savedStagingIndexes = null
@@ -144,7 +162,8 @@ class EndToEndTasksTest extends BaseTest {
         finalFile.exists() == true
         assert (savedStagingIndexes == null)
         assert (savedFinalIndexes == null)
-        
+
+
         when: "there is index info in entity.json file, indexes should be created in src/main/entity-config/databases"
         addIndexInfo("my-new-unique-product-test-entity-1")
         result = runTask('hubSaveIndexes')
@@ -161,15 +180,15 @@ class EndToEndTasksTest extends BaseTest {
         finalFile.exists() == true
         assert (savedStagingIndexes.size() == 1)
         assert (savedFinalIndexes.size() == 1)
-        
-        
+
+
         when: "hubSaveIndexes is run again, duplicate entries shouldn't exist"
         result = runTask('hubSaveIndexes')
         stagingDatabaseIndexObj = getJsonResource(stagingFile.getPath())
         savedStagingIndexes = stagingDatabaseIndexObj.get("range-path-index")
         finalDatabaseIndexObj = getJsonResource(finalFile.getPath())
         savedFinalIndexes = finalDatabaseIndexObj.get("range-path-index")
-        
+
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':hubSaveIndexes').outcome == SUCCESS
@@ -178,5 +197,66 @@ class EndToEndTasksTest extends BaseTest {
         finalFile.exists() == true
         assert (savedStagingIndexes.size() == 1)
         assert (savedFinalIndexes.size() == 1)
+    }
+
+    def "mlUpdateIndexes task test"() {
+        given:
+        File stagingFile = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR, "databases",
+                HubConfig.STAGING_ENTITY_DATABASE_FILE).toFile()
+        File finalFile = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR, "databases",
+                HubConfig.FINAL_ENTITY_DATABASE_FILE).toFile()
+        int stagingIndexCount = getStagingRangePathIndexSize()
+        int finalIndexCount = getFinalRangePathIndexSize()
+        int jobIndexCount = getJobsRangePathIndexSize()
+
+
+        when: "mlUpdateIndexes is run and stagingFile and finalFile ar empty, no indexes are deployed"
+        FileUtils.forceDelete(stagingFile)
+        FileUtils.forceDelete(finalFile)
+        result = runTask('mlUpdateIndexes')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlUpdateIndexes').outcome == SUCCESS
+        getStagingRangePathIndexSize() == stagingIndexCount
+        getFinalRangePathIndexSize() == finalIndexCount
+
+
+        when: "mlUpdateIndexes is run when indexes are saved in stagingFile and finalFile"
+        runTask('hubSaveIndexes')
+        result = runTask('mlUpdateIndexes')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlUpdateIndexes').outcome == SUCCESS
+        getStagingRangePathIndexSize() == stagingIndexCount + 1
+        getFinalRangePathIndexSize() == finalIndexCount + 1
+
+
+        when: "trying to do mlUpdateIndexes again"
+        result = runTask('mlUpdateIndexes')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlUpdateIndexes').outcome == SUCCESS
+        getStagingRangePathIndexSize() == stagingIndexCount + 1
+        getFinalRangePathIndexSize() == finalIndexCount + 1
+        deleteRangePathIndexes("data-hub-STAGING")
+        deleteRangePathIndexes("data-hub-FINAL")
+    }
+
+    def "hubDeployUserModules task test for deploying entities"() {
+        given:
+        int stagingDbCount = getStagingDocCount()
+        int finalDbCount = getFinalDocCount()
+
+        when:
+        result = runTask('hubDeployUserModules')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':hubDeployUserModules').outcome == SUCCESS
+        getStagingDocCount() == stagingDbCount + 3
+        getFinalDocCount() == finalDbCount + 3
     }
 }

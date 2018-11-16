@@ -19,9 +19,10 @@ mlAppName=data-hub
 mlIsHostLoadBalancer=false
 
 mlUsername=hub-admin-user
-mlPassword=fO3^)&X|j_O8m^k_2=xi
+#mlPassword=fO3^)&X|j_O8m^k_2=xi
+mlPassword=hub-admin-user
 mlManageUsername=hub-admin-user
-mlManagePassword=fO3^)&X|j_O8m^k_2=xi
+mlManagePassword=hub-admin-user
 mlSecurityUsername=admin
 mlSecurityPassword=admin
 

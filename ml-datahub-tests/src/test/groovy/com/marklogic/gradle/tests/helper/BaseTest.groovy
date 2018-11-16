@@ -43,6 +43,8 @@ import org.custommonkey.xmlunit.XMLUnit
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.rules.TemporaryFolder
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.w3c.dom.Document
 import org.xml.sax.SAXException
 import spock.lang.Specification
@@ -74,28 +76,30 @@ class BaseTest extends Specification {
 
     static HubConfig _hubConfig = null
 
+    static final protected Logger logger = LoggerFactory.getLogger(BaseTest.class)
+
     BuildResult runTask(String... task) {
         return GradleRunner.create()
-            .withProjectDir(new File(projectDir.toString()))
-            .withArguments(task)
-            .withDebug(true)
-            .withPluginClasspath()
-            .build()
+                .withProjectDir(new File(projectDir.toString()))
+                .withArguments(task)
+                .withDebug(true)
+                .withPluginClasspath()
+                .build()
     }
 
     BuildResult runFailTask(String... task) {
         return GradleRunner.create()
-            .withProjectDir(new File(projectDir.toString()))
-            .withArguments(task)
-            .withDebug(true)
-            .withPluginClasspath().buildAndFail()
+                .withProjectDir(new File(projectDir.toString()))
+                .withArguments(task)
+                .withDebug(true)
+                .withPluginClasspath().buildAndFail()
     }
 
     static HubConfig hubConfig() {
         if (_hubConfig == null || !_hubConfig.projectDir.equals(projectDir.toString())) {
-            _hubConfig = HubConfigBuilder.newHubConfigBuilder(projectDir.root.toString())
-                .withPropertiesFromEnvironment()
-                .build()
+            _hubConfig = HubConfigBuilder.newHubConfigBuilder(projectDir.toString())
+                    .withPropertiesFromEnvironment()
+                    .build()
         }
         return _hubConfig
     }
@@ -276,11 +280,56 @@ class BaseTest extends Specification {
         Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.JOB));
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
-    
+
     void getPropertiesFile() {
         propertiesFile = new File(Paths.get(".").resolve("gradle.properties").toString())
     }
-    
+
+    void deleteRangePathIndexes(String databaseName) {
+        String databaseFragment = getDatabaseManager().getPropertiesAsJson(databaseName)
+        ObjectMapper mapper = new ObjectMapper()
+        JsonNode dbObject = mapper.readTree(databaseFragment)
+        JsonNode rangePathIndexes = dbObject.get("range-path-index")
+        for(JsonNode rangePathIndex : rangePathIndexes) {
+            String type = rangePathIndex.get("scalar-type").asText()
+            String collation = rangePathIndex.get("collation").asText()
+            String path = rangePathIndex.get("path-expression").asText()
+            String pos = rangePathIndex.get("range-value-positions").asText()
+            String val = rangePathIndex.get("invalid-values").asText()
+            deleteRangePathIndexes(databaseName, type, collation, path, pos, val)
+        }
+    }
+
+    void deleteRangePathIndexes(String databaseName, String type, String collation, String pathSeq,
+            String pos, String val) {
+        ServerEvaluationCall eval = hubConfig().newStagingClient().newServerEval()
+
+        if(pos.equals("false")) {
+            pos = "fn:false()";
+        } else {
+            pos = "fn:true()";
+        }
+
+        String installer ='''
+                import module namespace admin = \"http://marklogic.com/xdmp/admin\" at \"/MarkLogic/admin.xqy\";
+                let $dbname := "''' + databaseName + '''"
+                let $type := "'''+ type + '''"
+                let $pathSeq := "''' + pathSeq + '''"
+                let $coll := "'''+ collation + '''"
+                let $pos := '''+ pos + '''
+                let $val := "'''+ val + '''"
+                let $config := admin:get-configuration()
+                let $dbid := xdmp:database($dbname)
+                let $rangespec := admin:database-range-path-index($dbid,$type,$pathSeq,$coll,$pos,$val)
+                let $applyConfig:= admin:database-delete-range-path-index($config, $dbid, $rangespec)
+                return admin:save-configuration($applyConfig)
+        '''
+        EvalResultIterator result = eval.xquery(installer).eval()
+        if (result.hasNext()) {
+            logger.error(result.next().getString())
+        }
+    }
+
     def addIndexInfo(String entityName) {
         ObjectMapper mapper = new ObjectMapper();
         File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile();
@@ -291,13 +340,13 @@ class BaseTest extends Specification {
         ((ObjectNode) entityNode).putArray("rangeIndex").add("ProductID");
         mapper.writerWithDefaultPrettyPrinter().writeValue(destDir, entity);
     }
-    
+
     def setupSpec() {
         // also add clear databases
         copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
         getPropertiesFile()
     }
-    
+
     def cleanupSpec() {
         FileUtils.forceDelete(Paths.get(projectDir, "gradle.properties").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
