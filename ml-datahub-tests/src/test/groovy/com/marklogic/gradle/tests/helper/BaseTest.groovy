@@ -345,9 +345,11 @@ class BaseTest extends Specification {
         // also add clear databases
         copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
         getPropertiesFile()
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
     }
 
     def cleanupSpec() {
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
         FileUtils.forceDelete(Paths.get(projectDir, "gradle.properties").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "plugins").toFile())

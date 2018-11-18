@@ -25,7 +25,17 @@ repositories {
     jcenter()
     mavenLocal()
     mavenCentral()
+    maven { url "https://plugins.gradle.org/m2/" }
     maven { url 'http://developer.marklogic.com/maven2' }
+    maven { url "http://repository.cloudera.com/artifactory/cloudera-repos/" }
+}
+
+configurations {
+    mlcp {
+        resolutionStrategy {
+            force "xml-apis:xml-apis:1.4.01"
+        }
+    }
 }
 
 dependencies {
@@ -40,12 +50,67 @@ dependencies {
     testCompile gradleTestKit()
     testCompile 'xmlunit:xmlunit:1.3'
     testCompile('org.spockframework:spock-core:1.1-groovy-2.4') {
-         exclude module: 'groovy-all'
+        exclude module: 'groovy-all'
     }
     testCompile 'commons-io:commons-io:2.4'
     testCompile 'junit:junit:4.12'
-    
+    testCompile 'com.marklogic:marklogic-xcc:9.0.7'
+    mlcp "com.marklogic:mlcp:9.0.7"
 }
+
+task importProductData(type: com.marklogic.gradle.task.MlcpTask) {
+    classpath = configurations.mlcp
+    input_file_path = "/Users/rvudutal/Documents/upgrade-testing/upgrade-5/input/json/products"
+    input_file_type = "documents"
+    output_collections = "Product,DHF"
+    output_permissions = "rest-reader,read,rest-writer,update"
+    output_uri_replace = "/Users/rvudutal/Documents/upgrade-testing/upgrade-5/input/json/products,''"
+    document_type = "json"
+    transform_module =  "/data-hub/4/transforms/mlcp-flow-transform.sjs"
+    transform_namespace = "http://marklogic.com/data-hub/mlcp-flow-transform"
+    transform_param = "entity-name=my-new-unique-product-test-entity-1,flow-name=prodInput"
+    command = "IMPORT"
+    mode = "local"
+    host = "localhost"
+    port = 8010
+    username = "data-hub-user"
+    password = "data-hub-user"
+    restrict_hosts = true
+}
+
+//task importCustomerData(type: com.marklogic.gradle.task.MlcpTask) {
+//    importCustomerData.dependsOn importProductData
+//    println("importCustomerData")
+//}
+//
+//task importOrderData(type: com.marklogic.gradle.task.MlcpTask) {
+//    importOrderData.dependsOn importCustomerData
+//    println("importOrderData")
+//}
+
+//task importProductDataXml(type: com.marklogic.gradle.task.MlcpTask) {
+//    println("importProductDataXml")
+//    println("importProductDataXml")
+//}
+//
+//task importCustomerDataXml(type: com.marklogic.gradle.task.MlcpTask) {
+//    importCustomerDataXml.dependsOn importProductDataXml
+//    println("importCustomerDataXml")
+//}
+//
+//task importOrderDataXml(type: com.marklogic.gradle.task.MlcpTask) {
+//    importOrderDataXml.dependsOn importCustomerDataXml
+//    println("importOrderDataXml")
+//}
+
+task importJsonData() {
+    importJsonData.dependsOn importProductData
+}
+
+//task importXmlData() {
+//    importXmlData.dependsOn importOrderDataXml
+//    println("importXmlData")
+//}
 
 test {
     testLogging {

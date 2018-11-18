@@ -22,6 +22,8 @@ import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.UnexpectedBuildFailure
+import org.gradle.testkit.runner.UnexpectedBuildSuccess
+
 import com.fasterxml.jackson.databind.JsonNode
 import com.marklogic.gradle.tests.helper.BaseTest
 import com.marklogic.hub.HubConfig
@@ -259,4 +261,290 @@ class EndToEndTasksTest extends BaseTest {
         getStagingDocCount() == stagingDbCount + 3
         getFinalDocCount() == finalDbCount + 3
     }
+
+    def "hubCreateInputFlow task test with an entity not in database, it creates an input flow"() {
+        given:
+        // clearing databases to clear entities
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-product-test-entity-1
+                flowName=input-flow-1
+                useES=false
+            }
+        """
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File prodInputDir = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1", "input").toFile()
+        File flowDir = Paths.get(prodInputDir.toString(), "input-flow-1").toFile()
+        File contentFile = Paths.get(flowDir.toString(), "content.sjs").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.sjs").toFile()
+        File mainFile = Paths.get(flowDir.toString(), "main.sjs").toFile()
+        File triplesFile = Paths.get(flowDir.toString(), "triples.sjs").toFile()
+
+        when: "creating an input flow with an entity not in database"
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':hubCreateInputFlow').outcome == SUCCESS
+        prodInputDir.isDirectory() == true
+        flowDir.isDirectory() == true
+        contentFile.isFile() == true
+        headersFile.isFile() == true
+        mainFile.isFile() == true
+        triplesFile.isFile() == true
+    }
+
+    def "hubCreateInputFlow task test with an entity not in filesystem, it still creates an input flow"() {
+        given:
+        propertiesFile << """
+            ext {
+                entityName=non-existent-entity
+                flowName=non-existent-entity-input-flow
+                useES=false
+            }
+        """
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File nonExistentEntityInputDir = Paths.get(entitiesDir.toString(), "non-existent-entity", "input").toFile()
+        File flowDir = Paths.get(nonExistentEntityInputDir.toString(), "non-existent-entity-input-flow").toFile()
+        File contentFile = Paths.get(flowDir.toString(), "content.sjs").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.sjs").toFile()
+        File mainFile = Paths.get(flowDir.toString(), "main.sjs").toFile()
+        File triplesFile = Paths.get(flowDir.toString(), "triples.sjs").toFile()
+
+
+        when: "creating an input flow with an entity not in filesystem, it creates an entity folder"
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':hubCreateInputFlow').outcome == SUCCESS
+        nonExistentEntityInputDir.isDirectory() == true
+        flowDir.isDirectory() == true
+        contentFile.isFile() == true
+        headersFile.isFile() == true
+        mainFile.isFile() == true
+        triplesFile.isFile() == true
+    }
+
+    def "hubCreateInputFlow task test when input params are missing "() {
+        given:
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File defaultValueTestEntity = Paths.get(entitiesDir.toString(), "default-value-test-entity", "input").toFile()
+        File flowDir = Paths.get(defaultValueTestEntity.toString(), "default-value-test-input-flow").toFile()
+        File contentFile = Paths.get(flowDir.toString(), "content.sjs").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.sjs").toFile()
+        File mainFile = Paths.get(flowDir.toString(), "main.sjs").toFile()
+        File triplesFile = Paths.get(flowDir.toString(), "triples.sjs").toFile()
+
+
+        when: "entityName parameter is missing when running the task"
+        propertiesFile << """
+            ext {
+                flowName=non-existent-entity-input-flow
+                useES=false
+            }
+        """
+        result = runFailTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildSuccess)
+        result.output.contains('entityName property is required')
+        result.task(":hubCreateInputFlow").outcome == FAILED
+
+
+        when: "flowName parameter is missing when running the task"
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        propertiesFile << """
+            ext {
+                entityName=non-existent-entity-input-flow
+                useES=false
+            }
+        """
+        result = runFailTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildSuccess)
+        result.output.contains('flowName property is required')
+        result.task(":hubCreateInputFlow").outcome == FAILED
+
+
+        when: "any of dataFormat/pluginformat are missing, default values are set to json/sjs"
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        propertiesFile << """
+            ext {
+                entityName=default-value-test-entity
+                flowName=default-value-test-input-flow
+                useES=false
+            }
+        """
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(":hubCreateInputFlow").outcome == SUCCESS
+        defaultValueTestEntity.isDirectory() == true
+        flowDir.isDirectory() == true
+        contentFile.isFile() == true
+        headersFile.isFile() == true
+        mainFile.isFile() == true
+        triplesFile.isFile() == true
+    }
+
+    def "hubCreateInputFlow task test with Json and Sjs combination"() {
+        given:
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-product-test-entity-1
+                flowName=my-new-unique-product-JS-input-flow-1
+                dataFormat=json
+                pluginFormat=sjs
+                useES=false
+            }
+        """
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File prodEntity = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1", "input")
+                .toFile()
+        File flowDir = Paths.get(prodEntity.toString(), "my-new-unique-product-JS-input-flow-1").toFile()
+        File contentFile = Paths.get(flowDir.toString(), "content.sjs").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.sjs").toFile()
+        File mainFile = Paths.get(flowDir.toString(), "main.sjs").toFile()
+        File triplesFile = Paths.get(flowDir.toString(), "triples.sjs").toFile()
+
+        when:
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(":hubCreateInputFlow").outcome == SUCCESS
+        prodEntity.isDirectory() == true
+        flowDir.isDirectory() == true
+        contentFile.isFile() == true
+        headersFile.isFile() == true
+        mainFile.isFile() == true
+        triplesFile.isFile() == true
+    }
+
+    def "hubCreateInputFlow task test with Xml and Sjs combination"() {
+        given:
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-product-test-entity-1
+                flowName=my-new-unique-product-XS-input-flow-1
+                dataFormat=xml
+                pluginFormat=sjs
+                useES=false
+            }
+        """
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File prodEntity = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1", "input")
+                .toFile()
+        File flowDir = Paths.get(prodEntity.toString(), "my-new-unique-product-XS-input-flow-1").toFile()
+        File contentFile = Paths.get(flowDir.toString(), "content.sjs").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.sjs").toFile()
+        File mainFile = Paths.get(flowDir.toString(), "main.sjs").toFile()
+        File triplesFile = Paths.get(flowDir.toString(), "triples.sjs").toFile()
+
+        when:
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(":hubCreateInputFlow").outcome == SUCCESS
+        prodEntity.isDirectory() == true
+        flowDir.isDirectory() == true
+        contentFile.isFile() == true
+        headersFile.isFile() == true
+        mainFile.isFile() == true
+        triplesFile.isFile() == true
+    }
+
+    def "hubCreateInputFlow task test with Json and Xqy combination"() {
+        given:
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-product-test-entity-1
+                flowName=my-new-unique-product-JX-input-flow-1
+                dataFormat=json
+                pluginFormat=xqy
+                useES=false
+            }
+        """
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File prodEntity = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1", "input")
+                .toFile()
+        File flowDir = Paths.get(prodEntity.toString(), "my-new-unique-product-JX-input-flow-1").toFile()
+        File contentFile = Paths.get(flowDir.toString(), "content.xqy").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.xqy").toFile()
+        File mainFile = Paths.get(flowDir.toString(), "main.xqy").toFile()
+        File triplesFile = Paths.get(flowDir.toString(), "triples.xqy").toFile()
+
+        when:
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(":hubCreateInputFlow").outcome == SUCCESS
+        prodEntity.isDirectory() == true
+        flowDir.isDirectory() == true
+        contentFile.isFile() == true
+        headersFile.isFile() == true
+        mainFile.isFile() == true
+        triplesFile.isFile() == true
+    }
+
+    def "hubCreateInputFlow task test with Xml and Xqy combination"() {
+        given:
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-product-test-entity-1
+                flowName=my-new-unique-product-XX-input-flow-1
+                dataFormat=xml
+                pluginFormat=xqy
+                useES=false
+            }
+        """
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File prodEntity = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1", "input")
+                .toFile()
+        File flowDir = Paths.get(prodEntity.toString(), "my-new-unique-product-XX-input-flow-1").toFile()
+        File contentFile = Paths.get(flowDir.toString(), "content.xqy").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.xqy").toFile()
+        File mainFile = Paths.get(flowDir.toString(), "main.xqy").toFile()
+        File triplesFile = Paths.get(flowDir.toString(), "triples.xqy").toFile()
+
+        when:
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(":hubCreateInputFlow").outcome == SUCCESS
+        prodEntity.isDirectory() == true
+        flowDir.isDirectory() == true
+        contentFile.isFile() == true
+        headersFile.isFile() == true
+        mainFile.isFile() == true
+        triplesFile.isFile() == true
+    }
+
+    def "hubCreateInputFlow task test creating a duplicate flow"() {
+    }
+    //
+    //    def "hubCreateInputFlow task positive test flow with combinations of sjs/xqy and json/xml"() {
+    //    }
+    //
+    //    def "hubCreateInputFlow task test to create duplicate flows"() {
+    //    }
 }
