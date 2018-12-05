@@ -29,22 +29,25 @@ import com.marklogic.client.io.DocumentMetadataHandle
 import com.marklogic.client.io.Format
 import com.marklogic.client.io.InputStreamHandle
 import com.marklogic.client.io.StringHandle
+import com.marklogic.hub.ApplicationConfig
 import com.marklogic.hub.DatabaseKind
 import com.marklogic.hub.HubConfig
-import com.marklogic.hub.HubConfigBuilder
+import com.marklogic.hub.impl.HubConfigImpl
 import com.marklogic.mgmt.ManageClient
 import com.marklogic.mgmt.resource.databases.DatabaseManager
 import com.marklogic.rest.util.Fragment
-
+import com.marklogic.rest.util.JsonNodeUtil
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
-import org.apache.commons.io.IOUtils
 import org.custommonkey.xmlunit.XMLUnit
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.rules.TemporaryFolder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.context.annotation.AnnotationConfigApplicationContext
+import org.springframework.core.env.PropertiesPropertySource
 import org.w3c.dom.Document
 import org.xml.sax.SAXException
 import spock.lang.Specification
@@ -52,89 +55,75 @@ import spock.lang.Specification
 import javax.xml.parsers.DocumentBuilder
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.parsers.ParserConfigurationException
-
-import java.nio.charset.StandardCharsets
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
+@EnableAutoConfiguration
 class BaseTest extends Specification {
 
-    // this value is for legacy purposes.  on dev should always be 5
-    static final int MOD_COUNT_WITH_TRACE_MODULES = 26
-    static final int MOD_COUNT = 5
-    // this value under good security conditions is 2 because hub-admin-user cannot read options files directly.
-    static final int MOD_COUNT_NO_OPTIONS_NO_TRACES = 2
-    static final TemporaryFolder testProjectDir = new TemporaryFolder()
-    static final String projectDir = Paths.get(".").toString()
+    static final String projectDir = new File("").getAbsolutePath()
     static File buildFile
     static File propertiesFile
 
-    static ManageClient _manageClient;
-    static DatabaseManager _databaseManager;
+    private ManageClient _manageClient;
+    private DatabaseManager _databaseManager;
 
-    static HubConfig _hubConfig = null
+    static private HubConfigImpl _hubConfig
 
     static final protected Logger logger = LoggerFactory.getLogger(BaseTest.class)
 
-    BuildResult runTask(String... task) {
+    public HubConfigImpl hubConfig() {
+        return _hubConfig
+    }
+
+    static BuildResult runTask(String... task) {
         return GradleRunner.create()
-                .withProjectDir(new File(projectDir.toString()))
-                .withArguments(task)
-                .withDebug(true)
-                .withPluginClasspath()
-                .build()
+            .withProjectDir(new File(projectDir.toString()))
+            .withArguments(task)
+            .withDebug(true)
+            .withPluginClasspath()
+            .build()
     }
 
     BuildResult runFailTask(String... task) {
         return GradleRunner.create()
-                .withProjectDir(new File(projectDir.toString()))
-                .withArguments(task)
-                .withDebug(true)
-                .withPluginClasspath().buildAndFail()
+            .withProjectDir(new File(projectDir.toString()))
+            .withArguments(task)
+            .withDebug(true)
+            .withPluginClasspath().buildAndFail()
     }
 
-    static HubConfig hubConfig() {
-        if (_hubConfig == null || !_hubConfig.projectDir.equals(projectDir.toString())) {
-            _hubConfig = HubConfigBuilder.newHubConfigBuilder(projectDir.toString())
-                    .withPropertiesFromEnvironment()
-                    .build()
-        }
-        return _hubConfig
-    }
+    // void installStagingDoc(String uri, DocumentMetadataHandle meta, String doc) {
+    //     _hubConfig.newStagingClient().newDocumentManager().write(uri, meta, new StringHandle(doc))
+    // }
 
-    void installStagingDoc(String uri, DocumentMetadataHandle meta, String doc) {
-        hubConfig().newStagingClient().newDocumentManager().write(uri, meta, new StringHandle(doc))
-    }
+    // void installFinalDoc(String uri, DocumentMetadataHandle meta, String doc) {
+    //     _hubConfig.newFinalClient().newDocumentManager().write(uri, meta, new StringHandle(doc))
+    // }
 
+    // void installModule(String path, String localPath) {
 
-    void installFinalDoc(String uri, DocumentMetadataHandle meta, String doc) {
-        hubConfig().newFinalClient().newDocumentManager().write(uri, meta, new StringHandle(doc))
-    }
+    //     InputStreamHandle handle = new InputStreamHandle(new File("src/test/resources/" + localPath).newInputStream())
+    //     String ext = FilenameUtils.getExtension(path)
+    //     switch (ext) {
+    //         case "xml":
+    //             handle.setFormat(Format.XML)
+    //             break
+    //         case "json":
+    //             handle.setFormat(Format.JSON)
+    //             break
+    //         default:
+    //             handle.setFormat(Format.TEXT)
+    //     }
 
-    static void installModule(String path, String localPath) {
-
-        InputStreamHandle handle = new InputStreamHandle(new File("src/test/resources/" + localPath).newInputStream())
-        String ext = FilenameUtils.getExtension(path)
-        switch (ext) {
-            case "xml":
-                handle.setFormat(Format.XML)
-                break
-            case "json":
-                handle.setFormat(Format.JSON)
-                break
-            default:
-                handle.setFormat(Format.TEXT)
-        }
-
-        DocumentManager modMgr = hubConfig().newModulesDbClient().newDocumentManager()
-        modMgr.write(path, handle);
-    }
+    //     DocumentManager modMgr = _hubConfig.newModulesDbClient().newDocumentManager()
+    //     modMgr.write(path, handle);
+    // }
 
 
     void clearDatabases(String... databases) {
-        ServerEvaluationCall eval = hubConfig().newStagingClient().newServerEval();
+        ServerEvaluationCall eval = _hubConfig.newStagingClient().newServerEval();
         String installer = '''
             declare variable $databases external;
             for $database in fn:tokenize($databases, ",")
@@ -170,6 +159,14 @@ class BaseTest extends Specification {
     static void copyResourceToFile(String resourceName, File dest) {
         def file = new File("src/test/resources/" + resourceName)
         FileUtils.copyFile(file, dest)
+    }
+
+    static void writeSSLFiles(File serverFile, File ssl) {
+        def files = []
+        files << ssl
+        files << serverFile
+        ObjectNode serverFiles = JsonNodeUtil.mergeJsonFiles(files);
+        FileUtils.writeStringToFile(serverFile, serverFiles.toString());
     }
 
     static int getStagingDocCount() {
@@ -211,16 +208,16 @@ class BaseTest extends Specification {
         ServerEvaluationCall eval
         switch (databaseName) {
             case HubConfig.DEFAULT_STAGING_NAME:
-                eval = hubConfig().newStagingClient().newServerEval()
+                eval = _hubConfig.newStagingClient().newServerEval()
                 break
             case HubConfig.DEFAULT_FINAL_NAME:
-                eval = hubConfig().newFinalClient().newServerEval()
+                eval = _hubConfig.newFinalClient().newServerEval()
                 break
             case HubConfig.DEFAULT_MODULES_DB_NAME:
-                eval = hubConfig().newModulesDbClient().newServerEval()
+                eval = _hubConfig.newModulesDbClient().newServerEval()
                 break
             case HubConfig.DEFAULT_JOB_NAME:
-                eval = hubConfig().newJobDbClient().newServerEval()
+                eval = _hubConfig.newJobDbClient().newServerEval()
         }
         try {
             return eval.xquery(query).eval()
@@ -231,52 +228,57 @@ class BaseTest extends Specification {
         }
     }
 
-    static void createBuildFile() {
-        buildFile = testProjectDir.newFile('build.gradle')
-        buildFile << """
-            plugins {
-                id 'com.marklogic.ml-data-hub'
-            }
-        """
-    }
+    // static void createBuildFile() {
+    //     buildFile = projectDir.newFile('build.gradle')
+    //     buildFile << """
+    //         plugins {
+    //             id 'com.marklogic.ml-data-hub'
+    //         }
+    //     """
+    // }
 
-    static void createFullPropertiesFile() {
-        def props = Paths.get(".").resolve("gradle.properties")
-        propertiesFile = testProjectDir.newFile("gradle.properties")
-        def dst = propertiesFile.toPath()
-        Files.copy(props, dst, StandardCopyOption.REPLACE_EXISTING)
-    }
+    // static void createFullPropertiesFile() {
+    //     try {
+    //         def props = Paths.get(".").resolve("gradle.properties")
+    //         propertiesFile = projectDir.newFile("gradle.properties")
+    //         def dst = propertiesFile.toPath()
+    //         Files.copy(props, dst, StandardCopyOption.REPLACE_EXISTING)
+    //     }
+    //     catch (IOException e) {
+    //         println("gradle.properties file already exists")
+    //     }
+    // }
 
-    static void createGradleFiles() {
-        createBuildFile()
-        createFullPropertiesFile()
-    }
+    // static void createGradleFiles() {
+    //     createBuildFile()
+    //     createFullPropertiesFile()
+    // }
 
-    static DatabaseManager getDatabaseManager() {
+    public DatabaseManager getDatabaseManager() {
         if (_databaseManager == null) {
             _databaseManager = new DatabaseManager(getManageClient());
         }
         return _databaseManager;
     }
 
-    static ManageClient getManageClient() {
+    public ManageClient getManageClient() {
         if (_manageClient == null) {
-            _manageClient = hubConfig().getManageClient();
+            _manageClient = _hubConfig.getManageClient();
         }
         return _manageClient;
     }
 
-    static int getStagingRangePathIndexSize() {
+    public int getStagingRangePathIndexSize() {
         Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.STAGING));
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
 
-    static int getFinalRangePathIndexSize() {
+    public int getFinalRangePathIndexSize() {
         Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.FINAL));
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
 
-    static int getJobsRangePathIndexSize() {
+    public int getJobsRangePathIndexSize() {
         Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.JOB));
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
@@ -302,7 +304,7 @@ class BaseTest extends Specification {
 
     void deleteRangePathIndexes(String databaseName, String type, String collation, String pathSeq,
             String pos, String val) {
-        ServerEvaluationCall eval = hubConfig().newStagingClient().newServerEval()
+        ServerEvaluationCall eval = _hubConfig.newStagingClient().newServerEval()
 
         if(pos.equals("false")) {
             pos = "fn:false()";
@@ -340,23 +342,35 @@ class BaseTest extends Specification {
         ((ObjectNode) entityNode).putArray("rangeIndex").add("ProductID");
         mapper.writerWithDefaultPrettyPrinter().writeValue(destDir, entity);
     }
-
-    def setupSpec() {
-        // also add clear databases
-        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
-        getPropertiesFile()
-        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
-    }
-
-    def cleanupSpec() {
-        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
-        FileUtils.forceDelete(Paths.get(projectDir, "gradle.properties").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
+    
+    def deleteFilesOnFileSystem() {
+        if(Paths.get(projectDir, "gradle-local.properties").toFile().exists())
+            FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "plugins").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "entity-config").toFile())
+        if(Paths.get(projectDir, "src", "main", "entity-config").toFile().exists()) 
+            FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "entity-config").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "hub-internal-config").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-config").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-modules").toFile())
         FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-schemas").toFile())
+    }
+
+    def setupSpec() {
+        XMLUnit.setIgnoreWhitespace(true)
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+        
+        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()
+        ctx.register(ApplicationConfig.class)
+        ctx.refresh()
+        _hubConfig = ctx.getBean(HubConfigImpl.class)
+        _hubConfig.createProject(projectDir)
+        _hubConfig.refreshProject()
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
+        deleteFilesOnFileSystem()
+    }
+
+    def cleanupSpec() {
+        deleteFilesOnFileSystem()
     }
 }

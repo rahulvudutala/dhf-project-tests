@@ -37,3 +37,7 @@ bit.json
 # ignoring ml-datahub-tests files
 ml-datahub-tests/bin
 ml-datahub-tests/build
+
+# ignoring dhf-deployment-tests files
+dhf-deployment-tests/bin
+dhf-deployment-tests/build

@@ -4,16 +4,16 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "com.marklogic:ml-data-hub:tasks-test-47"
-        classpath "com.marklogic:marklogic-data-hub:tasks-test-5"
+        classpath "com.marklogic:ml-data-hub:4.0.spring"
+        classpath "com.marklogic:marklogic-data-hub:4.0.spring"
     }
 }
 
 plugins {
-//    id 'net.saliman.properties' version '1.4.6'
     id "groovy"
     id "java-gradle-plugin"
-//    id 'com.marklogic.ml-data-hub' version '4.0.1'
+    id 'org.springframework.boot' version '2.0.6.RELEASE'
+    id "io.spring.dependency-management" version "1.0.5.RELEASE"
 }
 
 apply plugin: "com.marklogic.ml-data-hub"
@@ -21,11 +21,14 @@ apply plugin: "com.marklogic.ml-data-hub"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+bootJar.enabled = false
+jar.enabled = true
+
 repositories {
     jcenter()
     mavenLocal()
     mavenCentral()
-    maven { url "https://plugins.gradle.org/m2/" }
+    maven { url 'http://repo.spring.io/milestone' }
     maven { url 'http://developer.marklogic.com/maven2' }
     maven { url "http://repository.cloudera.com/artifactory/cloudera-repos/" }
 }
@@ -40,17 +43,23 @@ configurations {
 
 dependencies {
     compile gradleApi()
-    compile ('com.marklogic:marklogic-data-hub:tasks-test-5') {
+    compile ('com.marklogic:marklogic-data-hub:4.0.spring') {
         exclude group: 'ch.qos.logback'
     }
-    compile ('com.marklogic:ml-gradle:3.9.0') {
+    compile ('com.marklogic:ml-gradle:3.10.2') {
         exclude group: 'ch.qos.logback'
     }
     testCompile localGroovy()
     testCompile gradleTestKit()
     testCompile 'xmlunit:xmlunit:1.3'
+    testCompile ('org.spockframework:spock-spring:1.1-groovy-2.4') {
+        exclude module: 'groovy-all'
+    }
     testCompile('org.spockframework:spock-core:1.1-groovy-2.4') {
         exclude module: 'groovy-all'
+    }
+    testCompile ('org.springframework.boot:spring-boot-starter-test:2.0.6.RELEASE')  {
+        exclude module: "logback-classic"      
     }
     testCompile 'commons-io:commons-io:2.4'
     testCompile 'junit:junit:4.12'
@@ -77,40 +86,6 @@ task importProductData(type: com.marklogic.gradle.task.MlcpTask) {
     password = "data-hub-user"
     restrict_hosts = true
 }
-
-//task importCustomerData(type: com.marklogic.gradle.task.MlcpTask) {
-//    importCustomerData.dependsOn importProductData
-//    println("importCustomerData")
-//}
-//
-//task importOrderData(type: com.marklogic.gradle.task.MlcpTask) {
-//    importOrderData.dependsOn importCustomerData
-//    println("importOrderData")
-//}
-
-//task importProductDataXml(type: com.marklogic.gradle.task.MlcpTask) {
-//    println("importProductDataXml")
-//    println("importProductDataXml")
-//}
-//
-//task importCustomerDataXml(type: com.marklogic.gradle.task.MlcpTask) {
-//    importCustomerDataXml.dependsOn importProductDataXml
-//    println("importCustomerDataXml")
-//}
-//
-//task importOrderDataXml(type: com.marklogic.gradle.task.MlcpTask) {
-//    importOrderDataXml.dependsOn importCustomerDataXml
-//    println("importOrderDataXml")
-//}
-
-task importJsonData() {
-    importJsonData.dependsOn importProductData
-}
-
-//task importXmlData() {
-//    importXmlData.dependsOn importOrderDataXml
-//    println("importXmlData")
-//}
 
 test {
     testLogging {

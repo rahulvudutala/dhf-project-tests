@@ -37,6 +37,11 @@ class EndToEndTasksTest extends BaseTest {
 
     @Shared def result
 
+    def setup() {
+        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
+        getPropertiesFile()
+    }
+    
     def "hubInit task test"() {
         when: "before running hubInit"
         File pluginsDir = new File(projectDir, "plugins")
@@ -329,8 +334,6 @@ class EndToEndTasksTest extends BaseTest {
 
     def "hubCreateInputFlow task test when input params are missing "() {
         given:
-        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
-        getPropertiesFile()
         File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
         File defaultValueTestEntity = Paths.get(entitiesDir.toString(), "default-value-test-entity", "input").toFile()
         File flowDir = Paths.get(defaultValueTestEntity.toString(), "default-value-test-input-flow").toFile()
@@ -395,10 +398,9 @@ class EndToEndTasksTest extends BaseTest {
         triplesFile.isFile() == true
     }
 
+    // ToDo: Also check the contents of the files created.
     def "hubCreateInputFlow task test with Json and Sjs combination"() {
         given:
-        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
-        getPropertiesFile()
         propertiesFile << """
             ext {
                 entityName=my-new-unique-product-test-entity-1
@@ -417,7 +419,7 @@ class EndToEndTasksTest extends BaseTest {
         File mainFile = Paths.get(flowDir.toString(), "main.sjs").toFile()
         File triplesFile = Paths.get(flowDir.toString(), "triples.sjs").toFile()
 
-        when:
+        when: "input flow is run json/sjs combination"
         result = runTask('hubCreateInputFlow')
 
         then:
@@ -431,10 +433,9 @@ class EndToEndTasksTest extends BaseTest {
         triplesFile.isFile() == true
     }
 
+    // ToDo: Also check the contents of the files created.
     def "hubCreateInputFlow task test with Xml and Sjs combination"() {
         given:
-        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
-        getPropertiesFile()
         propertiesFile << """
             ext {
                 entityName=my-new-unique-product-test-entity-1
@@ -453,7 +454,7 @@ class EndToEndTasksTest extends BaseTest {
         File mainFile = Paths.get(flowDir.toString(), "main.sjs").toFile()
         File triplesFile = Paths.get(flowDir.toString(), "triples.sjs").toFile()
 
-        when:
+        when: "input flow is run xml/sjs combination"
         result = runTask('hubCreateInputFlow')
 
         then:
@@ -467,10 +468,9 @@ class EndToEndTasksTest extends BaseTest {
         triplesFile.isFile() == true
     }
 
+    // TODO: Also check the contents of the files created.
     def "hubCreateInputFlow task test with Json and Xqy combination"() {
         given:
-        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
-        getPropertiesFile()
         propertiesFile << """
             ext {
                 entityName=my-new-unique-product-test-entity-1
@@ -489,7 +489,7 @@ class EndToEndTasksTest extends BaseTest {
         File mainFile = Paths.get(flowDir.toString(), "main.xqy").toFile()
         File triplesFile = Paths.get(flowDir.toString(), "triples.xqy").toFile()
 
-        when:
+        when: "input flow is run json/xqy combination"
         result = runTask('hubCreateInputFlow')
 
         then:
@@ -503,10 +503,9 @@ class EndToEndTasksTest extends BaseTest {
         triplesFile.isFile() == true
     }
 
+    // ToDo: Also check the contents of the files created.
     def "hubCreateInputFlow task test with Xml and Xqy combination"() {
         given:
-        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
-        getPropertiesFile()
         propertiesFile << """
             ext {
                 entityName=my-new-unique-product-test-entity-1
@@ -525,7 +524,7 @@ class EndToEndTasksTest extends BaseTest {
         File mainFile = Paths.get(flowDir.toString(), "main.xqy").toFile()
         File triplesFile = Paths.get(flowDir.toString(), "triples.xqy").toFile()
 
-        when:
+        when: "input flow is run xml/xqy combination"
         result = runTask('hubCreateInputFlow')
 
         then:
@@ -540,6 +539,32 @@ class EndToEndTasksTest extends BaseTest {
     }
 
     def "hubCreateInputFlow task test creating a duplicate flow"() {
+        given:
+        propertiesFile << """
+            ext {
+                entityName=my-new-unique-product-test-entity-1
+                flowName=my-new-unique-product-JS-input-flow-1
+                dataFormat=json
+                pluginFormat=sjs
+                useES=false
+            }
+        """
+        File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+        File prodEntity = Paths.get(entitiesDir.toString(), "my-new-unique-product-test-entity-1", "input")
+                .toFile()
+        File flowDir = Paths.get(prodEntity.toString(), "my-new-unique-product-JS-input-flow-1").toFile()
+        File headersFile = Paths.get(flowDir.toString(), "headers.sjs").toFile()
+        File oldHeadersFile = Paths.get("src/main/resources/headers-old.sjs").toFile()
+        copyResourceToFile("headers.sjs", headersFile)
+
+
+        when: "creating a duplicate input flow, the existing flows shouldn't be overridden"
+        result = runTask('hubCreateInputFlow')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(":hubCreateInputFlow").outcome == SUCCESS
+        FileUtils.contentEquals(headersFile, oldHeadersFile) == false
     }
     //
     //    def "hubCreateInputFlow task positive test flow with combinations of sjs/xqy and json/xml"() {
