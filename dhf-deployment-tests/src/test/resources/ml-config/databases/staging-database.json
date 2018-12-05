@@ -1,0 +1,5 @@
+{
+  "database-name": "%%mlStagingDbName%%",
+  "schema-database": "%%mlStagingSchemasDbName1%%",
+  "collection-lexicon": false
+}
