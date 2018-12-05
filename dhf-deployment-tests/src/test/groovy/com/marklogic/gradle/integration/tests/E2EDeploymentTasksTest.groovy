@@ -44,6 +44,10 @@ class E2EDeploymentTasksTest extends BaseTest {
     @Shared def result
     @Shared File mlConfigDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR).toFile()
     @Shared File mlConfigDbDir = Paths.get(mlConfigDir.toString(), "databases").toFile()
+
+    @Shared File hubConfigDir = Paths.get(projectDir.toString(), HubConfig.HUB_CONFIG_DIR).toFile()
+    @Shared File hubConfigDbDir = Paths.get(hubConfigDir.toString(), "databases").toFile()
+
     @Shared API api
 
     def "test deploy a new database with config from ml-config" () {
@@ -54,7 +58,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         copyResourceToFile("ml-config/databases/staging-schemas-database.json", newStagingSchemasDbDir)
 
         when:
-        assert (schDatabase.getCollectionLexicon() == true)
+        assert (schDatabase.getCollectionLexicon() == null)
         result = runTask('mlDeployDatabases')
         schDatabase = api.db(getPropertyFromPropertiesFile("mlStagingSchemasDbName1"))
 
@@ -64,32 +68,43 @@ class E2EDeploymentTasksTest extends BaseTest {
         assert (schDatabase.getCollectionLexicon() == false)
     }
 
-    @Ignore
     def "test deploy staging database with config from hub-internal-config and ml-config" () {
-    }
-
-    @Ignore
-    def "test deploy a new database with config from hub-internal-config" () {
-    }
-
-    @Ignore
-    def "test server response"() {
         given:
-        API api = new API(getManageClient())
+        api = new API(getManageClient())
+        File mlConfigStagingDbDir = Paths.get(mlConfigDbDir.toString(), "staging-database.json").toFile()
+        Database stgDatabase = api.db(getPropertyFromPropertiesFile("mlStagingDbName"))
+        String stgSchemaDb = getPropertyFromPropertiesFile("mlStagingSchemasDbName1")
+        copyResourceToFile("ml-config/databases/staging-database.json", mlConfigStagingDbDir)
 
         when:
-        Server s = api.server("custom-db")
-        println("")
+        result = runTask('mlDeployDatabases')
+        stgDatabase = api.db(getPropertyFromPropertiesFile("mlStagingDbName"))
 
         then:
-        if(s != null) {
-            println(s.getModulesDatabase())
-        } else {
-            println("null")
-        }
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployDatabases').outcome == SUCCESS
+        assert (stgDatabase.getSchemaDatabase().equals(stgSchemaDb))
     }
 
-    def cleanup() {
-        cleanUpProjectDir()
+    def "test deploy a new database with config from hub-internal-config" () {
+        given:
+        api = new API(getManageClient())
+        File hubConfigNewDbDir = Paths.get(hubConfigDbDir.toString(), "new-database.json").toFile()
+
+        Database newDb = api.db(getPropertyFromPropertiesFile("mlNewDb"))
+        String newDbSchemaDbName = getPropertyFromPropertiesFile("mlStagingSchemasDbName1")
+        String newDbName = getPropertyFromPropertiesFile("mlNewDb")
+
+        copyResourceToFile("hub-internal-config/databases/new-database.json", hubConfigNewDbDir)
+
+        when:
+        result = runTask('mlDeployDatabases')
+        newDb = api.db(getPropertyFromPropertiesFile("mlNewDb"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployDatabases').outcome == SUCCESS
+        assert (newDb.databaseName.equals(newDbName))
+        assert (newDb.getSchemaDatabase().equals(newDbSchemaDbName))
     }
 }

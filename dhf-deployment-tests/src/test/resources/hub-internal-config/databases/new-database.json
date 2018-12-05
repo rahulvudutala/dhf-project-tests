@@ -1,4 +1,4 @@
 {
-  "database-name": "%%mlStagingDbName%%",
+  "database-name": "%%mlNewDb%%",
   "schema-database": "%%mlStagingSchemasDbName1%%"
 }

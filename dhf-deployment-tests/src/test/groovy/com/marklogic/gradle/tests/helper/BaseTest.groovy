@@ -311,11 +311,14 @@ class BaseTest extends Specification {
     def cleanUpProjectDir() {
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
                 "staging-schemas-database-1.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
+                "staging-database.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "databases",
+                "new-database.json"))
     }
 
     def setupSpec() {
         // TODO: Check for existing dhf and delete if exists
-        // TODO: Deploy DHF
         XMLUnit.setIgnoreWhitespace(true)
         getPropertiesFile()
 
@@ -328,15 +331,11 @@ class BaseTest extends Specification {
         _datahub = ctx.getBean(DataHubImpl.class)
         _hubConfig.refreshProject()
 
-        println(_datahub.isInstalled().isInstalled())
-
-        if(_datahub.isInstalled().isInstalled()) {
-            runTask('mlUndeploy', '-Pconfirm=true')
-        }
         runTask('mlDeploy')
     }
 
     def cleanupSpec() {
-        // TODO: do mlUndeploy
+        runTask('mlUndeploy', '-Pconfirm=true')
+        cleanUpProjectDir()
     }
 }
