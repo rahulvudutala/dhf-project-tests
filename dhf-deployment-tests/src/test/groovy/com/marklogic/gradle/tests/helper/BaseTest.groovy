@@ -310,7 +310,7 @@ class BaseTest extends Specification {
 
     def cleanUpProjectDir() {
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
-            "staging-schemas-database-1.json"))
+                "staging-schemas-database-1.json"))
     }
 
     def setupSpec() {
@@ -325,9 +325,15 @@ class BaseTest extends Specification {
         ctx.refresh()
         _hubConfig = ctx.getBean(HubConfigImpl.class)
         _hubConfig.createProject(projectDir)
+        _datahub = ctx.getBean(DataHubImpl.class)
         _hubConfig.refreshProject()
 
-        // to clear the databases and deploy
+        println(_datahub.isInstalled().isInstalled())
+
+        if(_datahub.isInstalled().isInstalled()) {
+            runTask('mlUndeploy', '-Pconfirm=true')
+        }
+        runTask('mlDeploy')
     }
 
     def cleanupSpec() {
