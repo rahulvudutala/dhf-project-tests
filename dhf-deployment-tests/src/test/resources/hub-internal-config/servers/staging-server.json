@@ -1,0 +1,5 @@
+{
+  "server-name": "%%mlStagingAppserverName%%",
+  "port": "%%mlStagingCustomPort%%",
+  "content-database": "%%hubNewDb1Name%%"
+}

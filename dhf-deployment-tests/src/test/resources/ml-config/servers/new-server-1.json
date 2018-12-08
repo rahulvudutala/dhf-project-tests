@@ -1,0 +1,12 @@
+{
+  "server-name": "%%mlNewAppserverName%%",
+  "server-type": "http",
+  "root": "/",
+  "port": "%%mlNewAppserverPort%%",
+  "group-name": "%%GROUP%%",
+  "modules-database": "%%mlModulesDbName%%",
+  "content-database": "%%mlStagingDbName%%",
+  "authentication": "%%mlStagingAuth%%",
+  "default-error-format": "json"
+}
+

@@ -309,12 +309,23 @@ class BaseTest extends Specification {
     }
 
     def cleanUpProjectDir() {
+        // cleaning database files
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
-                "staging-schemas-database-1.json"))
+                "new-database-1.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
                 "staging-database.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "databases",
                 "new-database.json"))
+
+        // cleaning server files
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "servers",
+                "custom-server.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "servers",
+                "staging-server.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "servers",
+                "new-server-1.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "servers",
+                "new-server.json"))
     }
 
     def setupSpec() {
