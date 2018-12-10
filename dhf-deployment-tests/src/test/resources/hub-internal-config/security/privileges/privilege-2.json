@@ -1,0 +1,5 @@
+{
+  "privilege-name":"%%mlHubPrivilege1Name%%",
+  "action":"http://my-app/test1",
+  "kind":"execute"
+}

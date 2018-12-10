@@ -1,0 +1,6 @@
+{
+  "user-name": "%%combNewUsername%%",
+  "description": "A user from mlconfig and hubconfig",
+  "password": "password",
+  "role": ["%%combRoleName%%"]
+}

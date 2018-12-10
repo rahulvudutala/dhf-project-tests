@@ -1,0 +1,5 @@
+{
+  "role-name": "%%combRoleName%%",
+  "description": "ml-config description",
+  "role": ["manage-admin", "rest-admin"]
+}

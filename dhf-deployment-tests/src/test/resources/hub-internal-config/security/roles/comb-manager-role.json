@@ -1,0 +1,5 @@
+{
+  "role-name": "%%combRoleName%%",
+  "description": "A role that allows the user to use the manage and client REST APIs",
+  "role": ["manage-admin"]
+}

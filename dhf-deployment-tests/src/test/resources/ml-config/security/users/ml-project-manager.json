@@ -1,0 +1,6 @@
+{
+  "user-name": "%%mlNewUsername%%",
+  "description": "A user that is used for managing resource applications",
+  "password": "password",
+  "role": ["%%mlRoleName%%"]
+}

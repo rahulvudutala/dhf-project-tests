@@ -29,9 +29,14 @@ import com.marklogic.gradle.tests.helper.BaseTest
 import com.marklogic.hub.HubConfig
 import com.marklogic.mgmt.api.API
 import com.marklogic.mgmt.api.database.Database
+import com.marklogic.mgmt.api.security.Privilege
+import com.marklogic.mgmt.api.security.Role
+import com.marklogic.mgmt.api.security.User
 import com.marklogic.mgmt.api.server.Server
+import com.marklogic.mgmt.resource.security.CertificateAuthorityManager
 
 import spock.lang.Ignore
+import spock.lang.IgnoreRest
 import spock.lang.Shared
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -49,6 +54,15 @@ class E2EDeploymentTasksTest extends BaseTest {
     @Shared File hubConfigDir = Paths.get(projectDir.toString(), HubConfig.HUB_CONFIG_DIR).toFile()
     @Shared File hubConfigDbDir = Paths.get(hubConfigDir.toString(), "databases").toFile()
     @Shared File hubConfigServerDir = Paths.get(hubConfigDir.toString(), "servers").toFile()
+
+    @Shared File mlPrivDir = Paths.get(mlConfigDir.toString(), "security", "privileges").toFile()
+    @Shared File hubPrivDir = Paths.get(hubConfigDir.toString(), "security", "privileges").toFile()
+
+    @Shared File mlRoleDir = Paths.get(mlConfigDir.toString(), "security", "roles").toFile()
+    @Shared File hubRoleDir = Paths.get(hubConfigDir.toString(), "security", "roles").toFile()
+
+    @Shared File mlUsersDir = Paths.get(mlConfigDir.toString(), "security", "users").toFile()
+    @Shared File hubUsersDir = Paths.get(hubConfigDir.toString(), "security", "users").toFile()
 
     @Shared API api
 
@@ -197,32 +211,186 @@ class E2EDeploymentTasksTest extends BaseTest {
         assert (newStagingServer.groupName.equals("Default"))
     }
 
+    def "test deploy privileges from ml-config" () {
+        given:
+        api = new API(getManageClient())
+        File mlPrivilegeConfig = Paths.get(mlPrivDir.toString(), "privilege-1.json").toFile()
+        Privilege mlPrivilege = api.privilegeExecute(getPropertyFromPropertiesFile("mlPrivilege1Name"))
+        copyResourceToFile("ml-config/security/privileges/privilege-1.json", mlPrivilegeConfig)
+
+        when:
+        assert (mlPrivilege.getAction() == null)
+        result = runTask('mlDeployPrivileges')
+        mlPrivilege = api.privilegeExecute(getPropertyFromPropertiesFile("mlPrivilege1Name"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployPrivileges').outcome == SUCCESS
+        assert (mlPrivilege.getAction().equals("urn:dhf-deployment-tests:privilege:1"))
+        assert (mlPrivilege.getKind().equals("execute"))
+    }
+
+    def "test deploy privileges from hub-internal-config" () {
+        given:
+        api = new API(getManageClient())
+        File hubPrivilegeConfig = Paths.get(hubPrivDir.toString(), "privilege-2.json").toFile()
+        Privilege hubPrivilege = api.privilegeExecute(getPropertyFromPropertiesFile("hubPrivilege1Name"))
+        copyResourceToFile("hub-internal-config/security/privileges/privilege-1.json", hubPrivilegeConfig)
+
+        when:
+        assert (hubPrivilege.getAction() == null)
+        result = runTask('mlDeployPrivileges')
+        hubPrivilege = api.privilegeExecute(getPropertyFromPropertiesFile("hubPrivilege1Name"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployPrivileges').outcome == SUCCESS
+        assert (hubPrivilege.getAction().equals("urn:dhf-deployment-tests:privilege:2"))
+        assert (hubPrivilege.getKind().equals("execute"))
+    }
+
+    def "test deploy privilege with same name and different config from hub-internal and ml-config, it should fail" () {
+        given:
+        api = new API(getManageClient())
+        File hubPrivilegeConfig = Paths.get(hubPrivDir.toString(), "privilege-3.json").toFile()
+        File mlPrivilegeConfig = Paths.get(mlPrivDir.toString(), "privilege-3.json").toFile()
+        Privilege mlHubPrivilege = api.privilegeExecute(getPropertyFromPropertiesFile("mlHubPrivilege1Name"))
+        copyResourceToFile("hub-internal-config/security/privileges/privilege-2.json", hubPrivilegeConfig)
+        copyResourceToFile("ml-config/security/privileges/privilege-2.json", mlPrivilegeConfig)
+
+        when:
+        assert (mlHubPrivilege.getAction() == null)
+        result = runFailTask('mlDeployPrivileges')
+        mlHubPrivilege = api.privilegeExecute(getPropertyFromPropertiesFile("mlHubPrivilege1Name"))
+
+        then:
+        notThrown(UnexpectedBuildSuccess)
+        result.task(':mlDeployPrivileges').outcome == FAILED
+        result.output.contains('Error occurred while sending PUT request')
+    }
+
     // TODO: mlDeploySecurity to deploy users roles and any certificates
-    def "test deploy user from ml-config" () {
-
-    }
-
-    def "test deploy user from hub-internal-config" () {
-
-    }
-
-    def "test deploy user from hub-internal-config and ml-config" () {
-
-    }
-
     def "test deploy role from ml-config" () {
+        given:
+        api = new API(getManageClient())
+        File mlRoleConfig = Paths.get(mlRoleDir.toString(), "ml-manager-role.json").toFile()
+        copyResourceToFile("ml-config/security/roles/ml-manager-role.json", mlRoleConfig)
+        Role mlRole = api.role(getPropertyFromPropertiesFile("mlRoleName"))
 
+        when:
+        assert (mlRole.role == null)
+        result = runTask('mlDeployRoles')
+        mlRole = api.role(getPropertyFromPropertiesFile("mlRoleName"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployRoles').outcome == SUCCESS
+        assert (mlRole.roleName.equals(getPropertyFromPropertiesFile("mlRoleName")))
+        assert (mlRole.role.contains("manage-admin"))
     }
 
     def "test deploy role from hub-internal-config" () {
+        given:
+        api = new API(getManageClient())
+        File hubRoleConfig = Paths.get(hubRoleDir.toString(), "hub-manager-role.json").toFile()
+        copyResourceToFile("hub-internal-config/security/roles/hub-manager-role.json", hubRoleConfig)
+        Role hubRole = api.role(getPropertyFromPropertiesFile("hubRoleName"))
 
+        when:
+        assert (hubRole.role == null)
+        result = runTask('mlDeployRoles')
+        hubRole = api.role(getPropertyFromPropertiesFile("hubRoleName"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployRoles').outcome == SUCCESS
+        assert (hubRole.roleName.equals(getPropertyFromPropertiesFile("hubRoleName")))
+        assert (hubRole.role.contains("manage-admin"))
     }
 
     def "test deploy role from hub-internal-config and ml-config" () {
+        given:
+        api = new API(getManageClient())
+        File hubRoleConfig = Paths.get(hubRoleDir.toString(), "comb-manager-role.json").toFile()
+        File mlRoleConfig = Paths.get(mlRoleDir.toString(), "comb-manager-role.json").toFile()
+        copyResourceToFile("hub-internal-config/security/roles/comb-manager-role.json", hubRoleConfig)
+        copyResourceToFile("ml-config/security/roles/comb-manager-role.json", mlRoleConfig)
+        Role combRole = api.role(getPropertyFromPropertiesFile("combRoleName"))
 
+        when:
+        assert (combRole.role == null)
+        result = runTask('mlDeployRoles')
+        combRole = api.role(getPropertyFromPropertiesFile("combRoleName"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployRoles').outcome == SUCCESS
+        assert (combRole.roleName.equals(getPropertyFromPropertiesFile("combRoleName")))
+        assert (combRole.description.equals("ml-config description"))
+        assert (combRole.role.contains("rest-admin"))
     }
 
-    // TODO: mlDeployPrivileges
+    def "test deploy user from ml-config" () {
+        given:
+        api = new API(getManageClient())
+        File mlUserConfig = Paths.get(mlUsersDir.toString(), "ml-project-manager.json").toFile()
+        copyResourceToFile("ml-config/security/users/ml-project-manager.json", mlUserConfig)
+        User mlUser = api.user(getPropertyFromPropertiesFile("mlNewUsername"))
+
+        when:
+        assert (mlUser.role == null)
+        result = runTask('mlDeployUsers')
+        mlUser = api.user(getPropertyFromPropertiesFile("mlNewUsername"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployUsers').outcome == SUCCESS
+        assert (mlUser.userName.equals(getPropertyFromPropertiesFile("mlNewUsername")))
+        assert (mlUser.role.contains(getPropertyFromPropertiesFile("mlRoleName")))
+    }
+
+    def "test deploy user from hub-internal-config" () {
+        given:
+        api = new API(getManageClient())
+        File hubUserConfig = Paths.get(hubUsersDir.toString(), "hub-project-manager.json").toFile()
+        copyResourceToFile("hub-internal-config/security/users/hub-project-manager.json", hubUserConfig)
+        User hubUser = api.user(getPropertyFromPropertiesFile("hubNewUsername"))
+
+        when:
+        assert (hubUser.role == null)
+        result = runTask('mlDeployUsers')
+        hubUser = api.user(getPropertyFromPropertiesFile("hubNewUsername"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployUsers').outcome == SUCCESS
+        assert (hubUser.userName.equals(getPropertyFromPropertiesFile("hubNewUsername")))
+        assert (hubUser.role.contains(getPropertyFromPropertiesFile("hubRoleName")))
+    }
+
+    def "test deploy user from hub-internal-config and ml-config" () {
+        given:
+        api = new API(getManageClient())
+        File hubUserConfig = Paths.get(hubUsersDir.toString(), "comb-project-manager.json").toFile()
+        File mlUserConfig = Paths.get(mlUsersDir.toString(), "comb-project-manager.json").toFile()
+        copyResourceToFile("hub-internal-config/security/users/comb-project-manager.json", hubUserConfig)
+        copyResourceToFile("ml-config/security/users/comb-project-manager.json", mlUserConfig)
+        User combUser = api.user(getPropertyFromPropertiesFile("combNewUsername"))
+
+        when:
+        assert (combUser.role == null)
+        result = runTask('mlDeployUsers')
+        combUser = api.user(getPropertyFromPropertiesFile("combNewUsername"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployUsers').outcome == SUCCESS
+        assert (combUser.userName.equals(getPropertyFromPropertiesFile("combNewUsername")))
+        assert (combUser.role.contains(getPropertyFromPropertiesFile("combRoleName")))
+        assert (combUser.description.equals("A user from mlconfig"))
+    }
+    
+    
 
     // TODO: Load Modules tasks
 

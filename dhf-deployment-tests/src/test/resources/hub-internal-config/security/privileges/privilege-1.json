@@ -1,0 +1,5 @@
+{
+  "privilege-name":"%%hubPrivilege1Name%%",
+  "action": "urn:dhf-deployment-tests:privilege:2",
+  "kind":"execute"
+}

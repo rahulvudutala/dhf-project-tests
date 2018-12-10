@@ -1,0 +1,5 @@
+{
+  "privilege-name":"%%mlPrivilege1Name%%",
+  "action": "urn:dhf-deployment-tests:privilege:1",
+  "kind":"execute"
+}

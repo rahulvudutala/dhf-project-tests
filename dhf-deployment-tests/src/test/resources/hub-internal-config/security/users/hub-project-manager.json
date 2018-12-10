@@ -1,0 +1,6 @@
+{
+  "user-name": "%%hubNewUsername%%",
+  "description": "A user that is used for managing resource applications",
+  "password": "password",
+  "role": ["%%hubRoleName%%"]
+}

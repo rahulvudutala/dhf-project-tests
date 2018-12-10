@@ -326,6 +326,35 @@ class BaseTest extends Specification {
                 "new-server-1.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "servers",
                 "new-server.json"))
+
+        // cleaning security files
+        // privileges
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "privileges", "privilege-1.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "privileges", "privilege-3.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "privileges", "privilege-2.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "privileges", "privilege-3.json"))
+        // roles
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "roles", "ml-manager-role.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "roles", "comb-manager-role.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "roles", "hub-manager-role.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "roles", "comb-manager-role.json"))
+        //users
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "users", "ml-project-manager.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "users", "comb-project-manager.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "users", "hub-project-manager.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "users", "comb-project-manager.json"))
     }
 
     def setupSpec() {
