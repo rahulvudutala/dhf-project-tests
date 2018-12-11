@@ -5,7 +5,8 @@ buildscript {
     maven {url 'http://developer.marklogic.com/maven2/'}
   }
   dependencies {
-    classpath 'com.marklogic:ml-data-hub:4.0.1'
+    classpath 'com.marklogic:ml-data-hub:4.0.SNAPSHOT'
+    classpath 'com.marklogic:marklogic-data-hub:4.0.SNAPSHOT'
   }
 }
 
@@ -21,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.marklogic:marklogic-data-hub:4.0.1'
+    compile 'com.marklogic:marklogic-data-hub:4.0.SNAPSHOT'
 }
 
 
