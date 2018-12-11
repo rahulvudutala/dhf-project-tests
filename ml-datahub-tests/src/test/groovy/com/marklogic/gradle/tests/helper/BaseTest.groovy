@@ -33,6 +33,7 @@ import com.marklogic.client.io.StringHandle
 import com.marklogic.hub.ApplicationConfig
 import com.marklogic.hub.DatabaseKind
 import com.marklogic.hub.HubConfig
+import com.marklogic.hub.error.DataHubSecurityNotInstalledException
 import com.marklogic.hub.impl.DataHubImpl
 import com.marklogic.hub.impl.HubConfigImpl
 import com.marklogic.mgmt.ManageClient
@@ -347,15 +348,13 @@ class BaseTest extends Specification {
     }
     
     def deleteFilesOnFileSystem() {
-        if(Paths.get(projectDir, "gradle-local.properties").toFile().exists())
-            FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "plugins").toFile())
-        if(Paths.get(projectDir, "src", "main", "entity-config").toFile().exists()) 
-            FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "entity-config").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "hub-internal-config").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-config").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-modules").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-schemas").toFile())
+        Files.deleteIfExists(Paths.get(projectDir, "gradle-local.properties"))
+        Files.deleteIfExists(Paths.get(projectDir, "plugins"))
+        Files.deleteIfExists(Paths.get(projectDir, "src", "main", "entity-config"))
+        Files.deleteIfExists(Paths.get(projectDir, "src", "main", "hub-internal-config"))
+        Files.deleteIfExists(Paths.get(projectDir, "src", "main", "ml-config"))
+        Files.deleteIfExists(Paths.get(projectDir, "src", "main", "ml-modules"))
+        Files.deleteIfExists(Paths.get(projectDir, "src", "main", "ml-schemas"))
     }
 
     def setupSpec() {
@@ -367,10 +366,6 @@ class BaseTest extends Specification {
         ctx.refresh()
         _hubConfig = ctx.getBean(HubConfigImpl.class)
         _hubConfig.createProject(projectDir)
-        _hubConfig.refreshProject()
-        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
-        deleteFilesOnFileSystem()
-        
         _datahub = ctx.getBean(DataHubImpl.class)
         _hubConfig.refreshProject()
         
@@ -380,8 +375,10 @@ class BaseTest extends Specification {
             } else {
                 runTask('mlDeploy')
             }
-        } catch(UnauthorizedUserException e) {
+        } catch(DataHubSecurityNotInstalledException e) {
             runTask('mlDeploy')
         }
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
+        //deleteFilesOnFileSystem()
     }
 }

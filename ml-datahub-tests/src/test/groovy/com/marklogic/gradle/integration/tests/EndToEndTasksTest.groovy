@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.marklogic.gradle.tests.helper.BaseTest
 import com.marklogic.hub.HubConfig
 
+import spock.lang.Ignore
 import spock.lang.Shared
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -41,7 +42,7 @@ class EndToEndTasksTest extends BaseTest {
         copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
         getPropertiesFile()
     }
-    
+    @Ignore
     def "hubInit task test"() {
         when: "before running hubInit"
         File pluginsDir = new File(projectDir, "plugins")
