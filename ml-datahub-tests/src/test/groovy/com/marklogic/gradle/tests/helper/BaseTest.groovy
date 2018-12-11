@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.marklogic.client.FailedRequestException
+import com.marklogic.client.UnauthorizedUserException
 import com.marklogic.client.document.DocumentManager
 import com.marklogic.client.eval.EvalResult
 import com.marklogic.client.eval.EvalResultIterator
@@ -32,6 +33,7 @@ import com.marklogic.client.io.StringHandle
 import com.marklogic.hub.ApplicationConfig
 import com.marklogic.hub.DatabaseKind
 import com.marklogic.hub.HubConfig
+import com.marklogic.hub.impl.DataHubImpl
 import com.marklogic.hub.impl.HubConfigImpl
 import com.marklogic.mgmt.ManageClient
 import com.marklogic.mgmt.resource.databases.DatabaseManager
@@ -70,6 +72,7 @@ class BaseTest extends Specification {
     private DatabaseManager _databaseManager;
 
     static private HubConfigImpl _hubConfig
+    static private DataHubImpl _datahub
 
     static final protected Logger logger = LoggerFactory.getLogger(BaseTest.class)
 
@@ -357,7 +360,6 @@ class BaseTest extends Specification {
 
     def setupSpec() {
         XMLUnit.setIgnoreWhitespace(true)
-        copyResourceToFile("gradle_properties", new File(projectDir, "gradle.properties"))
         getPropertiesFile()
         
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()
@@ -368,9 +370,18 @@ class BaseTest extends Specification {
         _hubConfig.refreshProject()
         clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
         deleteFilesOnFileSystem()
-    }
-
-    def cleanupSpec() {
-        deleteFilesOnFileSystem()
+        
+        _datahub = ctx.getBean(DataHubImpl.class)
+        _hubConfig.refreshProject()
+        
+        try {
+            if(_datahub.isInstalled().isInstalled()) {
+                logger.info("DHF is installed ")
+            } else {
+                runTask('mlDeploy')
+            }
+        } catch(UnauthorizedUserException e) {
+            runTask('mlDeploy')
+        }
     }
 }

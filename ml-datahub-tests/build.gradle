@@ -1,11 +1,12 @@
 buildscript {
     repositories {
+        // maven {url 'http://distro.marklogic.com/nexus/repository/maven-releases/'}
         mavenLocal()
         jcenter()
     }
     dependencies {
-        classpath "com.marklogic:ml-data-hub:4.0.spring"
-        classpath "com.marklogic:marklogic-data-hub:4.0.spring"
+        classpath "com.marklogic:ml-data-hub:4.0.SNAPSHOT"
+        classpath "com.marklogic:marklogic-data-hub:4.0.SNAPSHOT"
     }
 }
 
@@ -43,7 +44,7 @@ configurations {
 
 dependencies {
     compile gradleApi()
-    compile ('com.marklogic:marklogic-data-hub:4.0.spring') {
+    compile ('com.marklogic:marklogic-data-hub:4.0.SNAPSHOT') {
         exclude group: 'ch.qos.logback'
     }
     compile ('com.marklogic:ml-gradle:3.10.2') {
