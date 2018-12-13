@@ -20,18 +20,25 @@ package com.marklogic.gradle.tests.helper
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.marklogic.client.DatabaseClient
 import com.marklogic.client.FailedRequestException
 import com.marklogic.client.document.DocumentManager
+import com.marklogic.client.document.DocumentPage
+import com.marklogic.client.document.DocumentRecord
 import com.marklogic.client.eval.EvalResult
 import com.marklogic.client.eval.EvalResultIterator
 import com.marklogic.client.eval.ServerEvaluationCall
 import com.marklogic.client.io.DocumentMetadataHandle
 import com.marklogic.client.io.Format
 import com.marklogic.client.io.InputStreamHandle
+import com.marklogic.client.io.JacksonParserHandle
 import com.marklogic.client.io.StringHandle
+import com.marklogic.client.query.QueryDefinition
+import com.marklogic.client.query.StructuredQueryBuilder
 import com.marklogic.hub.ApplicationConfig
 import com.marklogic.hub.DatabaseKind
 import com.marklogic.hub.HubConfig
+import com.marklogic.hub.error.DataHubSecurityNotInstalledException
 import com.marklogic.hub.impl.DataHubImpl
 import com.marklogic.hub.impl.HubConfigImpl
 import com.marklogic.mgmt.ManageClient
@@ -63,20 +70,27 @@ import java.nio.file.StandardCopyOption
 @EnableAutoConfiguration
 class BaseTest extends Specification {
 
-    static final String projectDir = new File("").getAbsolutePath()
+    protected static final String projectDir = new File("").getAbsolutePath()
     static File buildFile
     static File propertiesFile
 
     private ManageClient _manageClient;
     private DatabaseManager _databaseManager;
 
-    static private HubConfigImpl _hubConfig
+    static public HubConfigImpl _hubConfig
+    static public HubConfigImpl _adminhubConfig
     static private DataHubImpl _datahub
+    static private DataHubImpl _admindatahub
 
+    static final int hubCoreModCount = 109
     static final protected Logger logger = LoggerFactory.getLogger(BaseTest.class)
 
     public HubConfigImpl hubConfig() {
         return _hubConfig
+    }
+
+    public HubConfigImpl adminHubConfig() {
+        return _adminhubConfig
     }
 
     static BuildResult runTask(String... task) {
@@ -96,7 +110,7 @@ class BaseTest extends Specification {
                 .withPluginClasspath().buildAndFail()
     }
 
-    void clearDatabases(String... databases) {
+    static void clearDatabases(String... databases) {
         ServerEvaluationCall eval = _hubConfig.newStagingClient().newServerEval();
         String installer = '''
             declare variable $databases external;
@@ -160,11 +174,16 @@ class BaseTest extends Specification {
     }
 
     static int getModulesDocCount() {
-        return getDocCount(HubConfig.DEFAULT_MODULES_DB_NAME, null)
+        return getModulesDocCount(null)
+    }
+
+    static int getModulesDocCount(String collection) {
+        return getDocCount(HubConfig.DEFAULT_MODULES_DB_NAME, collection)
     }
 
     static int getDocCount(String database, String collection) {
         int count = 0
+        logger.info("database" + database)
         String collectionName = ""
         if (collection != null) {
             collectionName = "'" + collection + "'"
@@ -188,7 +207,7 @@ class BaseTest extends Specification {
                 eval = _hubConfig.newFinalClient().newServerEval()
                 break
             case HubConfig.DEFAULT_MODULES_DB_NAME:
-                eval = _hubConfig.newModulesDbClient().newServerEval()
+                eval = _adminhubConfig.newModulesDbClient().newServerEval()
                 break
             case HubConfig.DEFAULT_JOB_NAME:
                 eval = _hubConfig.newJobDbClient().newServerEval()
@@ -235,7 +254,7 @@ class BaseTest extends Specification {
         propertiesFile = new File(Paths.get(".").resolve("gradle.properties").toString())
     }
 
-    String getPropertyFromPropertiesFile(String key) {
+    static String getPropertyFromPropertiesFile(String key) {
         Properties p = new Properties()
         p.load(new FileInputStream("gradle.properties"))
         return p.getProperty(key)
@@ -355,14 +374,18 @@ class BaseTest extends Specification {
                 "users", "hub-project-manager.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
                 "users", "comb-project-manager.json"))
+        //certificate authorities
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "certificate-authorities", "server.crt"))
+
+        // cleaning install modules files
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "staging-entity-options.xml"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "final-entity-options.xml"))
+        FileUtils.deleteDirectory(Paths.get(projectDir, "plugins", "entities").toFile())
+        FileUtils.deleteDirectory(Paths.get(projectDir, "src", "main", "ml-modules", "ext").toFile())
     }
 
-    def setupSpec() {
-        // TODO: Check for existing dhf and delete if exists
-        XMLUnit.setIgnoreWhitespace(true)
-        getPropertiesFile()
-
-        // Initializing hubconfig
+    void configureHubConfig() {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()
         ctx.register(ApplicationConfig.class)
         ctx.refresh()
@@ -370,12 +393,42 @@ class BaseTest extends Specification {
         _hubConfig.createProject(projectDir)
         _datahub = ctx.getBean(DataHubImpl.class)
         _hubConfig.refreshProject()
+    }
 
+    void configureAdminHubConfig() {
+        AnnotationConfigApplicationContext ctx1 = new AnnotationConfigApplicationContext()
+        ctx1.register(ApplicationConfig.class)
+        ctx1.refresh()
+        _adminhubConfig = ctx1.getBean(HubConfigImpl.class)
+        _adminhubConfig.createProject(projectDir)
+        _adminhubConfig.setMlUsername(getPropertyFromPropertiesFile("mlSecurityUsername"))
+        _adminhubConfig.setMlPassword(getPropertyFromPropertiesFile("mlSecurityPassword"))
+        _admindatahub = ctx1.getBean(DataHubImpl.class)
+        _adminhubConfig.refreshProject()
+        _admindatahub.wireClient()
+    }
+
+    def setupSpec() {
+        XMLUnit.setIgnoreWhitespace(true)
+        getPropertiesFile()
+        
+        // Initializing hubconfig
+        configureHubConfig()
+        configureAdminHubConfig()
+        
+        try {
+            if(_datahub.isInstalled().isInstalled()) {
+                runTask('mlUndeploy', '-Pconfirm=true')
+            }
+        } catch(DataHubSecurityNotInstalledException e) {
+            logger.info("No Datahub is installed")
+        }
         runTask('mlDeploy')
     }
 
     def cleanupSpec() {
         runTask('mlUndeploy', '-Pconfirm=true')
         cleanUpProjectDir()
+        runTask('mlDeploy')
     }
 }

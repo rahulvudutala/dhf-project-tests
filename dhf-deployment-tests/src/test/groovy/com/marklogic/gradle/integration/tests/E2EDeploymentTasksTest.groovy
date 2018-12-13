@@ -23,10 +23,14 @@ import java.nio.file.Paths
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.UnexpectedBuildFailure
 import org.gradle.testkit.runner.UnexpectedBuildSuccess
-
+import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import com.fasterxml.jackson.databind.JsonNode
 import com.marklogic.gradle.tests.helper.BaseTest
+import com.marklogic.hub.ApplicationConfig
 import com.marklogic.hub.HubConfig
+import com.marklogic.hub.impl.HubConfigImpl
+import com.marklogic.mgmt.ManageClient
+import com.marklogic.mgmt.ManageConfig
 import com.marklogic.mgmt.api.API
 import com.marklogic.mgmt.api.database.Database
 import com.marklogic.mgmt.api.security.Privilege
@@ -34,6 +38,7 @@ import com.marklogic.mgmt.api.security.Role
 import com.marklogic.mgmt.api.security.User
 import com.marklogic.mgmt.api.server.Server
 import com.marklogic.mgmt.resource.security.CertificateAuthorityManager
+import com.marklogic.rest.util.ResourcesFragment
 
 import spock.lang.Ignore
 import spock.lang.IgnoreRest
@@ -47,6 +52,7 @@ import static org.gradle.testkit.runner.TaskOutcome.FAILED
 class E2EDeploymentTasksTest extends BaseTest {
 
     @Shared def result
+
     @Shared File mlConfigDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR).toFile()
     @Shared File mlConfigDbDir = Paths.get(mlConfigDir.toString(), "databases").toFile()
     @Shared File mlConfigServerDir = Paths.get(mlConfigDir.toString(), "servers").toFile()
@@ -63,6 +69,14 @@ class E2EDeploymentTasksTest extends BaseTest {
 
     @Shared File mlUsersDir = Paths.get(mlConfigDir.toString(), "security", "users").toFile()
     @Shared File hubUsersDir = Paths.get(hubConfigDir.toString(), "security", "users").toFile()
+
+    @Shared File mlCertAuthDir = Paths.get(mlConfigDir.toString(), "security", "certificate-authorities").toFile()
+    @Shared File hubCertAuthDir = Paths.get(hubConfigDir.toString(), "security", "certificate-authorities").toFile()
+
+    @Shared File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+    @Shared File entityConfigDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR).toFile()
+
+    @Shared File tmpDir = Paths.get(projectDir.toString(), ".tmp").toFile()
 
     @Shared API api
 
@@ -389,25 +403,151 @@ class E2EDeploymentTasksTest extends BaseTest {
         assert (combUser.role.contains(getPropertyFromPropertiesFile("combRoleName")))
         assert (combUser.description.equals("A user from mlconfig"))
     }
-    
-    
-
-    // TODO: Load Modules tasks
 
     @Ignore
-    def "test server response"() {
+    def "test deploy Certificate Authorities" () {
         given:
-        API api = new API(getManageClient())
+        File mlCertAuthConfig = Paths.get(mlCertAuthDir.toString(), "server.crt").toFile()
+        copyResourceToFile("ml-config/security/certificate-authorities/server.crt", mlCertAuthConfig)
 
         when:
-        Server s = api.server("custom-db")
-        println("")
+        result = runTask('mlDeploySecurity')
+        // ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
 
         then:
-        if(s != null) {
-            println(s.getModulesDatabase())
-        } else {
-            println("null")
-        }
+        println("")
+
     }
+
+    // TODO: Load Modules tasks
+    def "test clear modules default database, this should remove modules from hub-core collection"() {
+        given:
+        int docCount = getModulesDocCount()
+        int curCoreModCount = getModulesDocCount("hub-core-module")
+        int diff = docCount - curCoreModCount
+
+        when:
+        result = runTask('mlClearModulesDatabase')
+        int finalDocCount = getModulesDocCount()
+        curCoreModCount = getModulesDocCount("hub-core-module")
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlClearModulesDatabase').outcome == SUCCESS
+        assert (curCoreModCount == 0)
+        assert (finalDocCount - curCoreModCount == diff)
+    }
+
+    def "test hubInstallModules to default database, this should add modules to hub-core collection"() {
+        given:
+        int docCount = getModulesDocCount()
+        int coreModCount = getModulesDocCount("hub-core-module")
+        int diff = docCount - coreModCount
+
+        when:
+        assert (coreModCount == 0)
+        result = runTask('hubInstallModules')
+        docCount = getModulesDocCount()
+        coreModCount = getModulesDocCount("hub-core-module")
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':hubInstallModules').outcome == SUCCESS
+        assert (docCount == coreModCount + diff)
+        assert (coreModCount == hubCoreModCount)
+    }
+
+    def "test hubDeployUserModules"() {
+        given:
+        api = new API(getManageClient())
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
+        File testEntityDir = Paths.get(entitiesDir.toString(), "test").toFile()
+        File useModDepFile = Paths.get(tmpDir.toString(), "user-modules-deploy-timestamps.properties").toFile()
+        if(!testEntityDir.isDirectory()) {
+            testEntityDir.mkdirs()
+        }
+        File testEntityConfig = Paths.get(testEntityDir.toString(), "test.entity.json").toFile()
+        File stagingEntityConfig = Paths.get(entityConfigDir.toString(), "staging-entity-options.xml").toFile()
+        File finalEntityConfig = Paths.get(entityConfigDir.toString(), "final-entity-options.xml").toFile()
+        copyResourceToFile("plugin/test.entity.json", testEntityConfig)
+        copyResourceToFile("entity-config/staging-entity-options.xml", stagingEntityConfig)
+        copyResourceToFile("entity-config/final-entity-options.xml", finalEntityConfig)
+        int stagingCount = getStagingDocCount()
+        int finalCount = getFinalDocCount()
+        int modCount = getModulesDocCount()
+
+        when:
+        result = runTask('hubDeployUserModules')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':hubDeployUserModules').outcome == SUCCESS
+        assert (getStagingDocCount() == stagingCount + 1)
+        assert (getFinalDocCount() == finalCount + 1)
+        assert (getModulesDocCount() == modCount + 2)
+        assert (useModDepFile.exists() == true)
+    }
+
+    def "test mlDeleteModuleTimestampsFile"() {
+        given:
+        File useModDepFile = Paths.get(tmpDir.toString(), "user-modules-deploy-timestamps.properties").toFile()
+        copyResourceToFile("tmpDir/user-modules-deploy-timestamps.properties", useModDepFile)
+
+        when:
+        assert (useModDepFile.exists() == true)
+        result = runTask('mlDeleteModuleTimestampsFile')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeleteModuleTimestampsFile').outcome == SUCCESS
+        assert (useModDepFile.exists() == false)
+    }
+
+    def "test mlLoadModules"() {
+        given:
+        runTask('mlClearDatabase', '-Pdatabase=data-hub-STAGING', '-Pconfirm=true')
+        runTask('mlClearDatabase', '-Pdatabase=data-hub-FINAL', '-Pconfirm=true')
+        runTask('mlClearDatabase', '-Pdatabase=data-hub-MODULES', '-Pconfirm=true')
+        File extMlLoadModConfig = Paths.get(projectDir.toString(), "src/main/ml-modules/ext/lib", "sample-lib.xqy").toFile()
+        copyResourceToFile("ml-modules/ext/lib/sample-lib.xqy", extMlLoadModConfig)
+
+        when:
+        result = runTask('mlLoadModules')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlLoadModules').outcome == SUCCESS
+        
+        assert(getModulesDocCount("hub-core-module") == hubCoreModCount)
+        // there will be 4 default docs also installed and ext/lib/sample-lib.xqy,
+        // along with 109 hub-core-modules and 2 entity-options files. So adding 7 to verify
+        assert(getModulesDocCount() == hubCoreModCount + 7)
+        assert(getStagingDocCount() == 1)
+        assert(getFinalDocCount() == 1)
+        
+    }
+
+    @Ignore
+    def "test mlReloadModules"() {
+        given:
+        int docCount = getModulesDocCount("hub-core-module")
+
+        when:
+        assert (docCount == 0)
+        result = runTask('hubInstallModules')
+        docCount = getModulesDocCount("hub-core-module")
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':hubInstallModules').outcome == SUCCESS
+        assert (docCount == hubCoreModCount)
+    }
+    
+    // TODO: mlDeployTriggers
+    @Ignore
+    def "test deploy triggers from ml-config directory" () {
+        
+    }
+    
+    // TODO: mlDeploySchemas
 }
