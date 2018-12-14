@@ -361,12 +361,8 @@ class BaseTest extends Specification {
         // privileges
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
                 "privileges", "privilege-1.json"))
-        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
-                "privileges", "privilege-3.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
                 "privileges", "privilege-2.json"))
-        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
-                "privileges", "privilege-3.json"))
         // roles
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
                 "roles", "ml-manager-role.json"))
@@ -376,7 +372,7 @@ class BaseTest extends Specification {
                 "roles", "hub-manager-role.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
                 "roles", "comb-manager-role.json"))
-        //users
+        // users
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
                 "users", "ml-project-manager.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
@@ -385,11 +381,32 @@ class BaseTest extends Specification {
                 "users", "hub-project-manager.json"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
                 "users", "comb-project-manager.json"))
-        //certificate authorities
+        // certificate authorities
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
                 "certificate-authorities", "server.crt"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
                 "certificate-authorities", "serverhub.crt"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "certificate-authorities", "server1.crt"))
+        // certificate templates
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "certificate-templates", "mltemplate.xml"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "certificate-templates", "hubtemplate.xml"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "certificate-templates", "mltemplate1.xml"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "certificate-templates", "hubtemplate1.xml"))
+        // protected-paths
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "protected-paths", "01_pii-protected-paths.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "protected-paths", "02_pii-protected-paths.json"))
+        // query-rolesets
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "query-rolesets", "pii-reader.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "query-rolesets", "manage-reader.json"))
 
         // cleaning install modules files
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "staging-entity-options.xml"))

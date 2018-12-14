@@ -17,6 +17,7 @@
 
 package com.marklogic.gradle.integration.tests
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -72,6 +73,12 @@ class E2EDeploymentTasksTest extends BaseTest {
 
     @Shared File mlCertAuthDir = Paths.get(mlConfigDir.toString(), "security", "certificate-authorities").toFile()
     @Shared File hubCertAuthDir = Paths.get(hubConfigDir.toString(), "security", "certificate-authorities").toFile()
+
+    @Shared File mlCertTempDir = Paths.get(mlConfigDir.toString(), "security", "certificate-templates").toFile()
+    @Shared File hubCertTempDir = Paths.get(hubConfigDir.toString(), "security", "certificate-templates").toFile()
+
+    @Shared File mlProtectedPathDir = Paths.get(mlConfigDir.toString(), "security", "protected-paths").toFile()
+    @Shared File mlQueryRoleSetDir = Paths.get(mlConfigDir.toString(), "security", "query-rolesets").toFile()
 
     @Shared File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
     @Shared File entityConfigDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR).toFile()
@@ -273,7 +280,6 @@ class E2EDeploymentTasksTest extends BaseTest {
         copyResourceToFile("ml-config/security/privileges/privilege-2.json", mlPrivilegeConfig)
 
         when:
-        assert (mlHubPrivilege.getAction() == null)
         result = runFailTask('mlDeployPrivileges')
         mlHubPrivilege = api.privilegeExecute(getPropertyFromPropertiesFile("mlHubPrivilege1Name"))
 
@@ -281,6 +287,10 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildSuccess)
         result.task(':mlDeployPrivileges').outcome == FAILED
         result.output.contains('Error occurred while sending PUT request')
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
+                "privileges", "privilege-3.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "privileges", "privilege-3.json"))
     }
 
     // TODO: mlDeploySecurity to deploy users roles and any certificates
@@ -457,11 +467,170 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployCertificateAuthorities').outcome == SUCCESS
         assert (size == 71)
-
     }
 
-    def "test deploy Certificate Templates" () {
+    def "test deploy Certificate Templates from mlconfig directory" () {
+        given:
+        File mlCertTempConfig = Paths.get(mlCertTempDir.toString(), "mltemplate.xml").toFile()
+        copyResourceToFile("ml-config/security/certificate-templates/mltemplate.xml", mlCertTempConfig)
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlSecurityUsername"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlSecurityPassword"))
+        hubConfig().refreshProject(p, true)
 
+        when:
+        result = runTask('mlDeployCertificateTemplates')
+        ManageClient m = hubConfig().getManageClient()
+        ManageConfig mc = m.manageConfig
+        mc.setUsername("admin")
+        mc.setPassword("admin")
+        m.setManageConfig(mc)
+        ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-templates"))
+        int size = rf.getResourceCount()
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        hubConfig().refreshProject(p, true)
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployCertificateTemplates').outcome == SUCCESS
+        assert (size == 1)
+    }
+
+    def "test deploy Certificate Templates from hub-internal-config directory" () {
+        given:
+        File hubCertTempConfig = Paths.get(hubCertTempDir.toString(), "hubtemplate.xml").toFile()
+        copyResourceToFile("hub-internal-config/security/certificate-templates/hubtemplate.xml", hubCertTempConfig)
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlSecurityUsername"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlSecurityPassword"))
+        hubConfig().refreshProject(p, true)
+
+        when:
+        result = runTask('mlDeployCertificateTemplates')
+        ManageClient m = hubConfig().getManageClient()
+        ManageConfig mc = m.manageConfig
+        mc.setUsername("admin")
+        mc.setPassword("admin")
+        m.setManageConfig(mc)
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/certificate-templates"))
+        int size = rf.getResourceCount()
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        hubConfig().refreshProject(p, true)
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployCertificateTemplates').outcome == SUCCESS
+        // 2 as one template is installed in previous test
+        assert (size == 2)
+    }
+
+    def "test mlDeployProtectedPaths" () {
+        given:
+        File mlProtectedPath = Paths.get(mlProtectedPathDir.toString(), "01_pii-protected-paths.json").toFile()
+        copyResourceToFile("ml-config/security/protected-paths/01_pii-protected-paths.json", mlProtectedPath)
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlSecurityUsername"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlSecurityPassword"))
+        hubConfig().refreshProject(p, true)
+
+        when:
+        result = runTask('mlDeployProtectedPaths')
+        ManageClient m = hubConfig().getManageClient()
+        ManageConfig mc = m.manageConfig
+        mc.setUsername("admin")
+        mc.setPassword("admin")
+        m.setManageConfig(mc)
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/protected-paths"))
+        int size = rf.getResourceCount()
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        hubConfig().refreshProject(p, true)
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployProtectedPaths').outcome == SUCCESS
+        assert (size == 1)
+    }
+
+    def "test mlDeployQueryRoleSets" () {
+        given:
+        File mlQueryRolePath = Paths.get(mlQueryRoleSetDir.toString(), "pii-reader.json").toFile()
+        copyResourceToFile("ml-config/security/query-rolesets/pii-reader.json", mlQueryRolePath)
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlSecurityUsername"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlSecurityPassword"))
+        hubConfig().refreshProject(p, true)
+
+        when:
+        result = runTask('mlDeployQueryRolesets')
+        ManageClient m = hubConfig().getManageClient()
+        ManageConfig mc = m.manageConfig
+        mc.setUsername("admin")
+        mc.setPassword("admin")
+        m.setManageConfig(mc)
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/query-rolesets"))
+        int size = rf.getResourceCount()
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        hubConfig().refreshProject(p, true)
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployQueryRolesets').outcome == SUCCESS
+        assert (size == 1)
+    }
+
+    def "test laod all security files using mlDeploySecurity" () {
+        given:
+        File mlCertAuthConfig = Paths.get(mlCertAuthDir.toString(), "server1.crt").toFile()
+        copyResourceToFile("ml-config/security/certificate-authorities/server1.crt", mlCertAuthConfig)
+
+        File mlCertTempConfig = Paths.get(mlCertTempDir.toString(), "mltemplate1.xml").toFile()
+        copyResourceToFile("ml-config/security/certificate-templates/mltemplate1.xml", mlCertTempConfig)
+
+        File hubCertTempConfig = Paths.get(hubCertTempDir.toString(), "hubtemplate1.xml").toFile()
+        copyResourceToFile("hub-internal-config/security/certificate-templates/hubtemplate1.xml", hubCertTempConfig)
+
+        File mlProtectedPath = Paths.get(mlProtectedPathDir.toString(), "02_pii-protected-paths.json").toFile()
+        copyResourceToFile("ml-config/security/protected-paths/02_pii-protected-paths.json", mlProtectedPath)
+
+        File mlQueryRolePath = Paths.get(mlQueryRoleSetDir.toString(), "manage-reader.json").toFile()
+        copyResourceToFile("ml-config/security/query-rolesets/manage-reader.json", mlQueryRolePath)
+
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlSecurityUsername"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlSecurityPassword"))
+        hubConfig().refreshProject(p, true)
+
+        when:
+        result = runTask('mlDeploySecurity')
+
+        ManageClient m = hubConfig().getManageClient()
+        ManageConfig mc = m.manageConfig
+        mc.setUsername("admin")
+        mc.setPassword("admin")
+        m.setManageConfig(mc)
+
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/query-rolesets"))
+        int queryRoleSetsSize = rf.getResourceCount()
+
+        rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/protected-paths"))
+        int protectedPathsSize = rf.getResourceCount()
+
+        rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/certificate-authorities"))
+        int caCount = rf.getResourceCount()
+
+        rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/certificate-templates"))
+        int ctCount = rf.getResourceCount()
+
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        hubConfig().refreshProject(p, true)
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeploySecurity').outcome == SUCCESS
+        assert (caCount == 72)
+        assert (ctCount == 4)
+        assert (protectedPathsSize == 2)
+        assert (queryRoleSetsSize == 2)
     }
 
     /* Load Modules tests starts here*/
@@ -595,4 +764,7 @@ class E2EDeploymentTasksTest extends BaseTest {
     }
 
     // TODO: mlDeploySchemas
+    def "test deploy schemas" () {
+
+    }
 }

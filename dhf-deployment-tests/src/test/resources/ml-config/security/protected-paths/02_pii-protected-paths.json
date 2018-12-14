@@ -1,0 +1,8 @@
+{
+  "path-expression" : "/envelope//instance//test/name",
+  "path-namespace" : [ ],
+  "permission" : {
+    "role-name" : "ml-manager-role",
+    "capability" : "read"
+  }
+}
