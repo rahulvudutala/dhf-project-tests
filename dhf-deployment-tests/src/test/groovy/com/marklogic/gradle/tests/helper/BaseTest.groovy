@@ -73,6 +73,7 @@ class BaseTest extends Specification {
     protected static final String projectDir = new File("").getAbsolutePath()
     static File buildFile
     static File propertiesFile
+    static Properties p
 
     private ManageClient _manageClient;
     private DatabaseManager _databaseManager;
@@ -255,9 +256,19 @@ class BaseTest extends Specification {
     }
 
     static String getPropertyFromPropertiesFile(String key) {
-        Properties p = new Properties()
-        p.load(new FileInputStream("gradle.properties"))
         return p.getProperty(key)
+    }
+
+    static void loadPropertiesFile() {
+        p = new Properties()
+        p.load(new FileInputStream("gradle.properties"))
+    }
+
+    static void updatePropertiesFile(String key, String value) {
+        FileOutputStream out = new FileOutputStream("gradle.properties");
+        p.setProperty(key, value);
+        p.store(out, null);
+        out.close();
     }
 
     void deleteRangePathIndexes(String databaseName) {
@@ -377,6 +388,8 @@ class BaseTest extends Specification {
         //certificate authorities
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
                 "certificate-authorities", "server.crt"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "security",
+                "certificate-authorities", "serverhub.crt"))
 
         // cleaning install modules files
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "staging-entity-options.xml"))
@@ -410,12 +423,13 @@ class BaseTest extends Specification {
 
     def setupSpec() {
         XMLUnit.setIgnoreWhitespace(true)
+        loadPropertiesFile()
         getPropertiesFile()
-        
+
         // Initializing hubconfig
         configureHubConfig()
         configureAdminHubConfig()
-        
+
         try {
             if(_datahub.isInstalled().isInstalled()) {
                 runTask('mlUndeploy', '-Pconfirm=true')
@@ -429,6 +443,8 @@ class BaseTest extends Specification {
     def cleanupSpec() {
         runTask('mlUndeploy', '-Pconfirm=true')
         cleanUpProjectDir()
+        File gradleProps = Paths.get(projectDir.toString(), "gradle.properties").toFile()
+        copyResourceToFile("gradle_properties", gradleProps)
         runTask('mlDeploy')
     }
 }

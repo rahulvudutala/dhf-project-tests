@@ -404,22 +404,67 @@ class E2EDeploymentTasksTest extends BaseTest {
         assert (combUser.description.equals("A user from mlconfig"))
     }
 
-    @Ignore
-    def "test deploy Certificate Authorities" () {
+    def "test deploy Certificate Authorities from ml-config" () {
         given:
         File mlCertAuthConfig = Paths.get(mlCertAuthDir.toString(), "server.crt").toFile()
         copyResourceToFile("ml-config/security/certificate-authorities/server.crt", mlCertAuthConfig)
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlSecurityUsername"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlSecurityPassword"))
+        hubConfig().refreshProject(p, true)
 
         when:
-        result = runTask('mlDeploySecurity')
-        // ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
+        result = runTask('mlDeployCertificateAuthorities')
+        ManageClient m = hubConfig().getManageClient()
+        ManageConfig mc = m.manageConfig
+        mc.setUsername("admin")
+        mc.setPassword("admin")
+        m.setManageConfig(mc)
+        ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
+        int size = rf.getResourceCount()
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        hubConfig().refreshProject(p, true)
 
         then:
-        println("")
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployCertificateAuthorities').outcome == SUCCESS
+        assert (size == 70)
 
     }
 
-    // TODO: Load Modules tasks
+    def "test deploy Certificate Authorities from hub-internal-config" () {
+        given:
+        File hubCertAuthConfig = Paths.get(hubCertAuthDir.toString(), "serverhub.crt").toFile()
+        copyResourceToFile("hub-internal-config/security/certificate-authorities/server.crt", hubCertAuthConfig)
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlSecurityUsername"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlSecurityPassword"))
+        hubConfig().refreshProject(p, true)
+
+        when:
+        result = runTask('mlDeployCertificateAuthorities')
+        ManageClient m = hubConfig().getManageClient()
+        ManageConfig mc = m.manageConfig
+        mc.setUsername("admin")
+        mc.setPassword("admin")
+        m.setManageConfig(mc)
+        ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
+        int size = rf.getResourceCount()
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        hubConfig().refreshProject(p, true)
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployCertificateAuthorities').outcome == SUCCESS
+        assert (size == 71)
+
+    }
+
+    def "test deploy Certificate Templates" () {
+
+    }
+
+    /* Load Modules tests starts here*/
     def "test clear modules default database, this should remove modules from hub-core collection"() {
         given:
         int docCount = getModulesDocCount()
@@ -517,14 +562,14 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlLoadModules').outcome == SUCCESS
-        
+
         assert(getModulesDocCount("hub-core-module") == hubCoreModCount)
         // there will be 4 default docs also installed and ext/lib/sample-lib.xqy,
         // along with 109 hub-core-modules and 2 entity-options files. So adding 7 to verify
         assert(getModulesDocCount() == hubCoreModCount + 7)
         assert(getStagingDocCount() == 1)
         assert(getFinalDocCount() == 1)
-        
+
     }
 
     @Ignore
@@ -542,12 +587,12 @@ class E2EDeploymentTasksTest extends BaseTest {
         result.task(':hubInstallModules').outcome == SUCCESS
         assert (docCount == hubCoreModCount)
     }
-    
+
     // TODO: mlDeployTriggers
     @Ignore
     def "test deploy triggers from ml-config directory" () {
-        
+
     }
-    
+
     // TODO: mlDeploySchemas
 }
