@@ -760,20 +760,27 @@ class E2EDeploymentTasksTest extends BaseTest {
 
     }
 
-    @Ignore
     def "test mlReloadModules"() {
         given:
-        int docCount = getModulesDocCount("hub-core-module")
+        runTask('mlClearDatabase', '-Pdatabase=data-hub-STAGING', '-Pconfirm=true')
+        runTask('mlClearDatabase', '-Pdatabase=data-hub-FINAL', '-Pconfirm=true')
+        runTask('mlClearDatabase', '-Pdatabase=data-hub-MODULES', '-Pconfirm=true')
+        File extMlLoadModConfig = Paths.get(projectDir.toString(), "src/main/ml-modules/ext/lib", "sample-lib.xqy").toFile()
+        copyResourceToFile("ml-modules/ext/lib/sample-lib.xqy", extMlLoadModConfig)
 
         when:
-        assert (docCount == 0)
-        result = runTask('hubInstallModules')
-        docCount = getModulesDocCount("hub-core-module")
+        result = runTask('mlReloadModules')
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(':hubInstallModules').outcome == SUCCESS
-        assert (docCount == hubCoreModCount)
+        result.task(':mlReloadModules').outcome == SUCCESS
+
+        assert(getModulesDocCount("hub-core-module") == hubCoreModCount)
+        // there will be 4 default docs also installed and ext/lib/sample-lib.xqy,
+        // along with 109 hub-core-modules and 2 entity-options files. So adding 7 to verify
+        assert(getModulesDocCount() == hubCoreModCount + 7)
+        assert(getStagingDocCount() == 1)
+        assert(getFinalDocCount() == 1)
     }
 
     // TODO: mlDeployTriggers
@@ -782,7 +789,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
     }
 
-    // TODO: mlDeploySchemas
+    // TODO: mlLoadSchemas
     def "test deploy schemas" () {
 
     }
