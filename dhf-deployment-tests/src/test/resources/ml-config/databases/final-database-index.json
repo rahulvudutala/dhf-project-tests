@@ -1,0 +1,16 @@
+{
+  "database-name": "%%mlFinalDbName%%",
+  "range-element-index": [],
+  "schema-database": "%%mlFinalSchemasDbName%%",
+  "triggers-database": "%%mlFinalTriggersDbName%%",
+  "triple-index": true,
+  "collection-lexicon": true,
+  "uri-lexicon": true,
+  "range-path-index" : [ {
+    "collation" : "http://marklogic.com/collation/codepoint",
+    "invalid-values" : "reject",
+    "path-expression" : "//*:instance/my-unique-some-entity/name",
+    "range-value-positions" : false,
+    "scalar-type" : "string"
+  }]
+}

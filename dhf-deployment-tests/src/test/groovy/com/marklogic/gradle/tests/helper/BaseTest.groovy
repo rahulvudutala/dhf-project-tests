@@ -236,18 +236,23 @@ class BaseTest extends Specification {
         return _manageClient;
     }
 
+    public int getCustomDbRangePathIndexSize(String dbName) {
+        Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(dbName)
+        return databseFragment.getElementValues("//m:range-path-index").size()
+    }
+
     public int getStagingRangePathIndexSize() {
-        Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.STAGING));
+        Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.STAGING))
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
 
     public int getFinalRangePathIndexSize() {
-        Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.FINAL));
+        Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.FINAL))
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
 
     public int getJobsRangePathIndexSize() {
-        Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.JOB));
+        Fragment databseFragment = getDatabaseManager().getPropertiesAsXml(_hubConfig.getDbName(DatabaseKind.JOB))
         return databseFragment.getElementValues("//m:range-path-index").size()
     }
 

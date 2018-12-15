@@ -1,4 +1,11 @@
 {
   "database-name": "%%mlNewDb1Name%%",
-  "collection-lexicon": false
+  "collection-lexicon": false,
+    "range-path-index" : [ {
+    "collation" : "http://marklogic.com/collation/codepoint",
+    "invalid-values" : "reject",
+    "path-expression" : "//*:instance/my-unique-order-entity/id",
+    "range-value-positions" : false,
+    "scalar-type" : "string"
+  }]
 }

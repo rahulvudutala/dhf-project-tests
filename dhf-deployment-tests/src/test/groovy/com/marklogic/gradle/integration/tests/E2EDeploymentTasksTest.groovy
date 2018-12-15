@@ -87,7 +87,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
     @Shared API api
 
-    def "test deploy a new database from ml-config" () {
+    def "test deploy a new database from ml-config with custom index" () {
         given:
         api = new API(getManageClient())
         File newDbConfig = Paths.get(mlConfigDbDir.toString(), "new-database-1.json").toFile()
@@ -103,6 +103,25 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployDatabases').outcome == SUCCESS
         assert (newDb.getCollectionLexicon() == false)
+        assert (getCustomDbRangePathIndexSize(getPropertyFromPropertiesFile("mlNewDb1Name")) == 1)
+    }
+
+    def "test deploy a final database from ml-config with custom index" () {
+        given:
+        api = new API(getManageClient())
+        File newDbConfig = Paths.get(mlConfigDbDir.toString(), "final-database.json").toFile()
+        Database newDb = api.db(getPropertyFromPropertiesFile("mlFinalDbName"))
+        copyResourceToFile("ml-config/databases/final-database-index.json", newDbConfig)
+
+        when:
+        result = runTask('mlDeployDatabases')
+        newDb = api.db(getPropertyFromPropertiesFile("mlFinalDbName"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployDatabases').outcome == SUCCESS
+        assert (getCustomDbRangePathIndexSize(getPropertyFromPropertiesFile("mlFinalDbName")) == 1)
+        copyResourceToFile("ml-config/databases/final-database.json", newDbConfig)
     }
 
     def "test deploy staging database from hub-internal-config and ml-config" () {
