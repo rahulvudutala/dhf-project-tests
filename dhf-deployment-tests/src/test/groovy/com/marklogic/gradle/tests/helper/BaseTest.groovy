@@ -184,7 +184,6 @@ class BaseTest extends Specification {
 
     static int getDocCount(String database, String collection) {
         int count = 0
-        logger.info("database" + database)
         String collectionName = ""
         if (collection != null) {
             collectionName = "'" + collection + "'"
@@ -206,6 +205,7 @@ class BaseTest extends Specification {
                 break
             case HubConfig.DEFAULT_FINAL_NAME:
                 eval = _hubConfig.newFinalClient().newServerEval()
+                _hubConfig.newFinalClient()
                 break
             case HubConfig.DEFAULT_MODULES_DB_NAME:
                 eval = _adminhubConfig.newModulesDbClient().newServerEval()
@@ -420,6 +420,9 @@ class BaseTest extends Specification {
                 "my-trigger.json"))
         FileUtils.deleteDirectory(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
                 getPropertyFromPropertiesFile("mlFinalTriggersDbName")).toFile())
+
+        // cleaning schemas files
+        Files.deleteIfExists(Paths.get(projectDir, "src", "main", "ml-schemas", "ml-sch.xsd"))
 
         // cleaning install modules files
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "staging-entity-options.xml"))

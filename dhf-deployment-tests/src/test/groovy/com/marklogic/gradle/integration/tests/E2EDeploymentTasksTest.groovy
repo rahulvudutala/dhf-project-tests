@@ -26,6 +26,7 @@ import org.gradle.testkit.runner.UnexpectedBuildFailure
 import org.gradle.testkit.runner.UnexpectedBuildSuccess
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.marklogic.gradle.tests.helper.BaseTest
 import com.marklogic.hub.ApplicationConfig
 import com.marklogic.hub.HubConfig
@@ -85,6 +86,8 @@ class E2EDeploymentTasksTest extends BaseTest {
 
     @Shared File mlTriggersDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR, "triggers").toFile()
     @Shared File hubTriggersDir = Paths.get(projectDir.toString(), HubConfig.HUB_CONFIG_DIR, "triggers").toFile()
+
+    @Shared File mlSchemasDir = Paths.get(projectDir.toString(), "src", "main", "ml-schemas").toFile()
 
     @Shared File tmpDir = Paths.get(projectDir.toString(), ".tmp").toFile()
 
@@ -799,7 +802,6 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        println(size)
         result.task(':mlDeployTriggers').outcome == SUCCESS
         assert (size == 1)
     }
@@ -817,7 +819,6 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        println(size)
         result.task(':mlDeployTriggers').outcome == SUCCESS
         assert (size == 2)
     }
@@ -844,9 +845,21 @@ class E2EDeploymentTasksTest extends BaseTest {
         assert (size == 3)
     }
 
+    def "test deploy schemas from ml-schemas" () {
+        given:
+        File mlSchemasConfig = Paths.get(mlSchemasDir.toString(), "ml-sch.xsd").toFile()
+        copyResourceToFile("ml-schemas/ml-sch.xsd", mlSchemasConfig)
 
-    // TODO: mlLoadSchemas
-    def "test deploy schemas" () {
+        when:
+        result = runTask('mlLoadSchemas')
+        String rf = getManageClient().getJson("/manage/v2/databases/data-hub-final-SCHEMAS?view=counts").toString()
+        ObjectMapper mapper = new ObjectMapper()
+        JsonNode actualObj = mapper.readTree(rf)
+        int docCount = actualObj.get("database-counts").get("count-properties").get("documents").get("value").asInt()
 
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlLoadSchemas').outcome == SUCCESS
+        assert (docCount == 1)
     }
 }
