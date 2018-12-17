@@ -413,6 +413,14 @@ class BaseTest extends Specification {
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
                 "query-rolesets", "manage-reader.json"))
 
+        // cleaning trigger files
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "triggers",
+                "my-trigger-ml-config.json"))
+        Files.deleteIfExists(Paths.get(projectDir, HubConfig.HUB_CONFIG_DIR, "triggers",
+                "my-trigger.json"))
+        FileUtils.deleteDirectory(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
+                getPropertyFromPropertiesFile("mlFinalTriggersDbName")).toFile())
+
         // cleaning install modules files
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "staging-entity-options.xml"))
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "final-entity-options.xml"))

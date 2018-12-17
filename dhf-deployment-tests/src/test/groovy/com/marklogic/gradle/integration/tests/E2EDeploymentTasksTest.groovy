@@ -81,7 +81,10 @@ class E2EDeploymentTasksTest extends BaseTest {
     @Shared File mlQueryRoleSetDir = Paths.get(mlConfigDir.toString(), "security", "query-rolesets").toFile()
 
     @Shared File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
-    @Shared File entityConfigDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR).toFile()
+    @Shared File entityConfigDir = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR).toFile()
+
+    @Shared File mlTriggersDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR, "triggers").toFile()
+    @Shared File hubTriggersDir = Paths.get(projectDir.toString(), HubConfig.HUB_CONFIG_DIR, "triggers").toFile()
 
     @Shared File tmpDir = Paths.get(projectDir.toString(), ".tmp").toFile()
 
@@ -784,10 +787,63 @@ class E2EDeploymentTasksTest extends BaseTest {
     }
 
     // TODO: mlDeployTriggers
-    @Ignore
-    def "test deploy triggers from ml-config directory" () {
+    def "test deploy triggers from hub-internal-config directory" () {
+        given:
+        File hubTriggerConfig = Paths.get(hubTriggersDir.toString(), "my-trigger.json").toFile()
+        copyResourceToFile("hub-internal-config/triggers/my-trigger.json", hubTriggerConfig)
 
+        when:
+        result = runTask('mlDeployTriggers')
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/databases/data-hub-final-TRIGGERS/triggers"))
+        int size = rf.getResourceCount()
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        println(size)
+        result.task(':mlDeployTriggers').outcome == SUCCESS
+        assert (size == 1)
     }
+
+    def "test deploy triggers from ml-config directory" () {
+        given:
+        File mlTriggerConfig = Paths.get(mlTriggersDir.toString(), "my-trigger-ml-config.json").toFile()
+        copyResourceToFile("ml-config/triggers/my-trigger-ml-config.json", mlTriggerConfig)
+
+        when:
+        result = runTask('mlDeployTriggers')
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/databases/" +
+                "data-hub-final-TRIGGERS/triggers"))
+        int size = rf.getResourceCount()
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        println(size)
+        result.task(':mlDeployTriggers').outcome == SUCCESS
+        assert (size == 2)
+    }
+
+    def "test deploy triggers from custom ml-config/databases/(name of triggers database)/triggers directory" () {
+        given:
+        File dbTriggerConfig = Paths.get(mlConfigDbDir.toString(), getPropertyFromPropertiesFile("mlFinalTriggersDbName"),
+                "triggers").toFile()
+        if(!dbTriggerConfig.isDirectory()) {
+            dbTriggerConfig.mkdirs()
+        }
+        File dbTriggerFileConfig = Paths.get(dbTriggerConfig.toString(), "custom-trigger-ml-config.json").toFile()
+        copyResourceToFile("ml-config/triggers/custom-trigger-ml-config.json", dbTriggerFileConfig)
+
+        when:
+        result = runTask('mlDeployTriggers')
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/databases/" +
+                "data-hub-final-TRIGGERS/triggers"))
+        int size = rf.getResourceCount()
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployTriggers').outcome == SUCCESS
+        assert (size == 3)
+    }
+
 
     // TODO: mlLoadSchemas
     def "test deploy schemas" () {
