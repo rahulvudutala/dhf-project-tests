@@ -789,7 +789,43 @@ class E2EDeploymentTasksTest extends BaseTest {
         assert(getFinalDocCount() == 1)
     }
 
-    // TODO: mlDeployTriggers
+    def "deploy modules from multiple mlModulePaths" () {
+        given:
+        updatePropertiesFile("mlModulePaths", "src/main/ml-modules,src/test/ml-modules")
+        File customModulePath = Paths.get(projectDir.toString(), "src/test/ml-modules/root/", "sample-mod.json").toFile()
+        copyResourceToFile("ml-modules/sec/sample-mod.json", customModulePath)
+        int modCount = getModulesDocCount()
+
+        when:
+        result = runTask('mlLoadModules')
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlLoadModules').outcome == SUCCESS
+        assert (getModulesDocCount() == modCount + 1)
+    }
+
+    def "deploy modules from multiple mlConfigPaths" () {
+        given:
+        api = new API(getManageClient())
+        updatePropertiesFile("mlConfigPaths", "src/main/hub-internal-config,src/main/ml-config,src/test/ml-config")
+        File customConfigPath = Paths.get(projectDir.toString(), "src/test/ml-config/security/users",
+                "sample-config-user.json").toFile()
+        copyResourceToFile("ml-modules/sec/sample-config-user.json", customConfigPath)
+        User secUser = api.user(getPropertyFromPropertiesFile("mlSecConfUsername"))
+
+        when:
+        assert (secUser.role == null)
+        result = runTask('mlDeployUsers')
+        secUser = api.user(getPropertyFromPropertiesFile("mlSecConfUsername"))
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlDeployUsers').outcome == SUCCESS
+        assert (secUser.userName.equals(getPropertyFromPropertiesFile("mlSecConfUsername")))
+        assert (secUser.role.contains(getPropertyFromPropertiesFile("mlHubUserRole")))
+    }
+
     def "test deploy triggers from hub-internal-config directory" () {
         given:
         File hubTriggerConfig = Paths.get(hubTriggersDir.toString(), "my-trigger.json").toFile()

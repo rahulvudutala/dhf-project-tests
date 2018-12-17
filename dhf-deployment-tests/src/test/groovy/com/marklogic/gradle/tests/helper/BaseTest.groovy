@@ -200,17 +200,17 @@ class BaseTest extends Specification {
     static EvalResultIterator runInDatabase(String query, String databaseName) {
         ServerEvaluationCall eval
         switch (databaseName) {
-            case HubConfig.DEFAULT_STAGING_NAME:
+            case getPropertyFromPropertiesFile("mlStagingDbName"):
                 eval = _hubConfig.newStagingClient().newServerEval()
                 break
-            case HubConfig.DEFAULT_FINAL_NAME:
+            case getPropertyFromPropertiesFile("mlFinalDbName"):
                 eval = _hubConfig.newFinalClient().newServerEval()
                 _hubConfig.newFinalClient()
                 break
-            case HubConfig.DEFAULT_MODULES_DB_NAME:
+            case getPropertyFromPropertiesFile("mlModulesDbName"):
                 eval = _adminhubConfig.newModulesDbClient().newServerEval()
                 break
-            case HubConfig.DEFAULT_JOB_NAME:
+            case getPropertyFromPropertiesFile("mlJobDbName"):
                 eval = _hubConfig.newJobDbClient().newServerEval()
         }
         try {
@@ -332,17 +332,6 @@ class BaseTest extends Specification {
         mapper.writerWithDefaultPrettyPrinter().writeValue(destDir, entity);
     }
 
-    def deleteFilesOnFileSystem() {
-        FileUtils.forceDelete(Paths.get(projectDir, "gradle.properties").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "gradle-local.properties").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "plugins").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "entity-config").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "hub-internal-config").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-config").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-modules").toFile())
-        FileUtils.forceDelete(Paths.get(projectDir, "src", "main", "ml-schemas").toFile())
-    }
-
     def cleanUpProjectDir() {
         // cleaning database files
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "databases",
@@ -429,6 +418,10 @@ class BaseTest extends Specification {
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.ENTITY_CONFIG_DIR, "final-entity-options.xml"))
         FileUtils.deleteDirectory(Paths.get(projectDir, "plugins", "entities").toFile())
         FileUtils.deleteDirectory(Paths.get(projectDir, "src", "main", "ml-modules", "ext").toFile())
+
+        // cleaning second modules config directories
+        FileUtils.deleteDirectory(Paths.get(projectDir, "src/test/ml-config").toFile())
+        FileUtils.deleteDirectory(Paths.get(projectDir, "src/test/ml-modules").toFile())
     }
 
     void configureHubConfig() {
