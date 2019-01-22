@@ -85,6 +85,7 @@ class BaseTest extends Specification {
 
     static final int hubCoreModCount = 109
     static final protected Logger logger = LoggerFactory.getLogger(BaseTest.class)
+    static String environmentName
 
     public HubConfigImpl hubConfig() {
         return _hubConfig
@@ -163,7 +164,7 @@ class BaseTest extends Specification {
     }
 
     static int getStagingDocCount(String collection) {
-        return getDocCount(HubConfig.DEFAULT_STAGING_NAME, collection)
+        return getDocCount(getPropertyFromPropertiesFile("mlStagingDbName"), collection)
     }
 
     static int getFinalDocCount() {
@@ -171,7 +172,7 @@ class BaseTest extends Specification {
     }
 
     static int getFinalDocCount(String collection) {
-        return getDocCount(HubConfig.DEFAULT_FINAL_NAME, collection)
+        return getDocCount(getPropertyFromPropertiesFile("mlFinalDbName"), collection)
     }
 
     static int getModulesDocCount() {
@@ -179,7 +180,7 @@ class BaseTest extends Specification {
     }
 
     static int getModulesDocCount(String collection) {
-        return getDocCount(HubConfig.DEFAULT_MODULES_DB_NAME, collection)
+        return getDocCount(getPropertyFromPropertiesFile("mlModulesDbName"), collection)
     }
 
     static int getDocCount(String database, String collection) {
@@ -449,6 +450,12 @@ class BaseTest extends Specification {
 
     def setupSpec() {
         XMLUnit.setIgnoreWhitespace(true)
+        environmentName = System.getProperty("environmentName")
+        if(environmentName.equals("custom")) {
+            File gradleProps = Paths.get(projectDir.toString(), "gradle.properties").toFile()
+            copyResourceToFile("gradle-custom.properties", gradleProps)
+        }
+        
         loadPropertiesFile()
         getPropertiesFile()
 

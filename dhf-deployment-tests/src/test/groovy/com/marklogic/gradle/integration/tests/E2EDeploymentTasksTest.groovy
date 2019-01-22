@@ -699,7 +699,7 @@ class E2EDeploymentTasksTest extends BaseTest {
     def "test hubDeployUserModules"() {
         given:
         api = new API(getManageClient())
-        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
+        clearDatabases(getPropertyFromPropertiesFile("mlStagingDbName"), getPropertyFromPropertiesFile("mlFinalDbName"))
         File testEntityDir = Paths.get(entitiesDir.toString(), "test").toFile()
         File useModDepFile = Paths.get(tmpDir.toString(), "user-modules-deploy-timestamps.properties").toFile()
         if(!testEntityDir.isDirectory()) {
@@ -833,7 +833,9 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         when:
         result = runTask('mlDeployTriggers')
-        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/databases/data-hub-final-TRIGGERS/triggers"))
+        String getUri = "/manage/v2/databases/" + getPropertyFromPropertiesFile("mlFinalTriggersDbName") + "/triggers"
+        println(getUri)
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml(getUri))
         int size = rf.getResourceCount()
 
         then:
@@ -849,8 +851,8 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         when:
         result = runTask('mlDeployTriggers')
-        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/databases/" +
-                "data-hub-final-TRIGGERS/triggers"))
+        String getUri = "/manage/v2/databases/" + getPropertyFromPropertiesFile("mlFinalTriggersDbName") + "/triggers"
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml(getUri))
         int size = rf.getResourceCount()
 
         then:
@@ -871,8 +873,8 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         when:
         result = runTask('mlDeployTriggers')
-        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/databases/" +
-                "data-hub-final-TRIGGERS/triggers"))
+        String getUri = "/manage/v2/databases/" + getPropertyFromPropertiesFile("mlFinalTriggersDbName") + "/triggers"
+        ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml(getUri))
         int size = rf.getResourceCount()
 
         then:
@@ -888,7 +890,8 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         when:
         result = runTask('mlLoadSchemas')
-        String rf = getManageClient().getJson("/manage/v2/databases/data-hub-final-SCHEMAS?view=counts").toString()
+        String rf = getManageClient().getJson("/manage/v2/databases/"+getPropertyFromPropertiesFile("mlFinalSchemasDbName")
+                +"?view=counts").toString()
         ObjectMapper mapper = new ObjectMapper()
         JsonNode actualObj = mapper.readTree(rf)
         int docCount = actualObj.get("database-counts").get("count-properties").get("documents").get("value").asInt()
@@ -897,5 +900,9 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildFailure)
         result.task(':mlLoadSchemas').outcome == SUCCESS
         assert (docCount == 1)
+    }
+    
+    def "test reDeploy schemas from ml-schemas" () {
+        
     }
 }
