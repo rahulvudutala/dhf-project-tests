@@ -693,7 +693,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         clearDatabases(getPropertyFromPropertiesFile("mlStagingDbName"), getPropertyFromPropertiesFile("mlFinalDbName"))
         
         File testEntityDir = Paths.get(entitiesDir.toString(), "test").toFile()
-        File useModDepFile = Paths.get(tmpDir.toString(), "user-modules-deploy-timestamps.properties").toFile()
+        File useModDepFile = Paths.get(tmpDir.toString(), "local-user-modules-deploy-timestamps.properties").toFile()
         if(!testEntityDir.isDirectory()) {
             testEntityDir.mkdirs()
         }
