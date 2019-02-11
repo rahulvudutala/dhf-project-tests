@@ -32,6 +32,7 @@ repositories {
     maven { url 'http://repo.spring.io/milestone' }
     maven { url 'http://developer.marklogic.com/maven2' }
     maven { url "http://repository.cloudera.com/artifactory/cloudera-repos/" }
+    maven { url 'http://distro.marklogic.com/nexus/repository/maven-snapshots/'}
 }
 
 configurations {
@@ -44,7 +45,7 @@ configurations {
 
 dependencies {
     compile gradleApi()
-    compile ('com.marklogic:marklogic-data-hub:4.2-1') {
+    compile ('com.marklogic:marklogic-data-hub:4.1-SNAPSHOT') {
         exclude group: 'ch.qos.logback'
     }
     compile ('com.marklogic:ml-gradle:3.10.2') {
