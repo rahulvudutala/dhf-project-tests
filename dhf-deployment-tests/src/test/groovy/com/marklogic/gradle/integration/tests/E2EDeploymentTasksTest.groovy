@@ -17,20 +17,19 @@
 
 package com.marklogic.gradle.integration.tests
 
+import static org.gradle.testkit.runner.TaskOutcome.FAILED
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 
-import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.UnexpectedBuildFailure
 import org.gradle.testkit.runner.UnexpectedBuildSuccess
-import org.springframework.context.annotation.AnnotationConfigApplicationContext
+
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.marklogic.gradle.tests.helper.BaseTest
-import com.marklogic.hub.ApplicationConfig
 import com.marklogic.hub.HubConfig
-import com.marklogic.hub.impl.HubConfigImpl
 import com.marklogic.mgmt.ManageClient
 import com.marklogic.mgmt.ManageConfig
 import com.marklogic.mgmt.api.API
@@ -39,17 +38,9 @@ import com.marklogic.mgmt.api.security.Privilege
 import com.marklogic.mgmt.api.security.Role
 import com.marklogic.mgmt.api.security.User
 import com.marklogic.mgmt.api.server.Server
-import com.marklogic.mgmt.resource.security.CertificateAuthorityManager
 import com.marklogic.rest.util.ResourcesFragment
 
-import spock.lang.Ignore
-import spock.lang.IgnoreRest
 import spock.lang.Shared
-
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
-import static org.junit.Assert.assertFalse
-import static org.junit.Assert.assertTrue
-import static org.gradle.testkit.runner.TaskOutcome.FAILED
 
 class E2EDeploymentTasksTest extends BaseTest {
 
@@ -700,6 +691,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         given:
         api = new API(getManageClient())
         clearDatabases(getPropertyFromPropertiesFile("mlStagingDbName"), getPropertyFromPropertiesFile("mlFinalDbName"))
+        
         File testEntityDir = Paths.get(entitiesDir.toString(), "test").toFile()
         File useModDepFile = Paths.get(tmpDir.toString(), "user-modules-deploy-timestamps.properties").toFile()
         if(!testEntityDir.isDirectory()) {
@@ -729,7 +721,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
     def "test mlDeleteModuleTimestampsFile"() {
         given:
-        File useModDepFile = Paths.get(tmpDir.toString(), "user-modules-deploy-timestamps.properties").toFile()
+        File useModDepFile = Paths.get(tmpDir.toString(), "local-user-modules-deploy-timestamps.properties").toFile()
         copyResourceToFile("tmpDir/user-modules-deploy-timestamps.properties", useModDepFile)
 
         when:
@@ -741,6 +733,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         result.task(':mlDeleteModuleTimestampsFile').outcome == SUCCESS
         assert (useModDepFile.exists() == false)
     }
+    
+//    TODO: mlDeleteModuleTimestampsFile in a specific env (-PenvironmentName)
 
     def "test mlLoadModules"() {
         given:
@@ -834,14 +828,14 @@ class E2EDeploymentTasksTest extends BaseTest {
         when:
         result = runTask('mlDeployTriggers')
         String getUri = "/manage/v2/databases/" + getPropertyFromPropertiesFile("mlFinalTriggersDbName") + "/triggers"
-        println(getUri)
         ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml(getUri))
         int size = rf.getResourceCount()
 
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployTriggers').outcome == SUCCESS
-        assert (size == 1)
+        // There are already 3 docs in the triggers database
+        assert (size == 4)
     }
 
     def "test deploy triggers from ml-config directory" () {
@@ -858,7 +852,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployTriggers').outcome == SUCCESS
-        assert (size == 2)
+        assert (size == 5)
     }
 
     def "test deploy triggers from custom ml-config/databases/(name of triggers database)/triggers directory" () {
@@ -880,7 +874,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployTriggers').outcome == SUCCESS
-        assert (size == 3)
+        assert (size == 6)
     }
 
     def "test deploy schemas from ml-schemas" () {
@@ -899,10 +893,6 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlLoadSchemas').outcome == SUCCESS
-        assert (docCount == 1)
-    }
-    
-    def "test reDeploy schemas from ml-schemas" () {
-        
+        assert (docCount == 2)
     }
 }

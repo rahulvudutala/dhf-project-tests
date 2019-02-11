@@ -41,6 +41,7 @@ import com.marklogic.hub.HubConfig
 import com.marklogic.hub.error.DataHubSecurityNotInstalledException
 import com.marklogic.hub.impl.DataHubImpl
 import com.marklogic.hub.impl.HubConfigImpl
+import com.marklogic.hub.impl.HubProjectImpl
 import com.marklogic.mgmt.ManageClient
 import com.marklogic.mgmt.resource.databases.DatabaseManager
 import com.marklogic.rest.util.Fragment
@@ -83,7 +84,7 @@ class BaseTest extends Specification {
     static private DataHubImpl _datahub
     static private DataHubImpl _admindatahub
 
-    static final int hubCoreModCount = 109
+    static final int hubCoreModCount = 111
     static final protected Logger logger = LoggerFactory.getLogger(BaseTest.class)
     static String environmentName
 
@@ -424,6 +425,10 @@ class BaseTest extends Specification {
         FileUtils.deleteDirectory(Paths.get(projectDir, "src/test/ml-config").toFile())
         FileUtils.deleteDirectory(Paths.get(projectDir, "src/test/ml-modules").toFile())
     }
+    
+    def cleanUpDirs() {
+        Files.deleteIfExists(Paths.get(projectDir, "src", "main"))
+    }
 
     void configureHubConfig() {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()
@@ -432,7 +437,7 @@ class BaseTest extends Specification {
         _hubConfig = ctx.getBean(HubConfigImpl.class)
         _hubConfig.createProject(projectDir)
         _datahub = ctx.getBean(DataHubImpl.class)
-        _hubConfig.refreshProject()
+        _hubConfig.refreshProject()        
     }
 
     void configureAdminHubConfig() {
@@ -450,19 +455,18 @@ class BaseTest extends Specification {
 
     def setupSpec() {
         XMLUnit.setIgnoreWhitespace(true)
-        environmentName = System.getProperty("environmentName")
-        if(environmentName.equals("custom")) {
-            File gradleProps = Paths.get(projectDir.toString(), "gradle.properties").toFile()
-            copyResourceToFile("gradle-custom.properties", gradleProps)
-        }
-        
+//        environmentName = System.getProperty("environmentName")
+//        if(environmentName.equals("custom")) {
+//            File gradleProps = Paths.get(projectDir.toString(), "gradle.properties").toFile()
+//            copyResourceToFile("gradle-custom.properties", gradleProps)
+//        }
+        runTask('hubInit')
         loadPropertiesFile()
         getPropertiesFile()
 
         // Initializing hubconfig
         configureHubConfig()
         configureAdminHubConfig()
-
         try {
             if(_datahub.isInstalled().isInstalled()) {
                 runTask('mlUndeploy', '-Pconfirm=true')
