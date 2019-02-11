@@ -253,6 +253,7 @@ class EndToEndTasksTest extends BaseTest {
         deleteRangePathIndexes("data-hub-FINAL")
     }
 
+    @Ignore
     def "hubDeployUserModules task test for deploying entities"() {
         given:
         int stagingDbCount = getStagingDocCount()

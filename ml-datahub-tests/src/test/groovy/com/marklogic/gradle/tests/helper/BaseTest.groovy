@@ -359,6 +359,7 @@ class BaseTest extends Specification {
 
     def setupSpec() {
         XMLUnit.setIgnoreWhitespace(true)
+        runTask('hubInit')
         getPropertiesFile()
         
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()
@@ -379,6 +380,6 @@ class BaseTest extends Specification {
             runTask('mlDeploy')
         }
         clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME)
-        //deleteFilesOnFileSystem()
+//        deleteFilesOnFileSystem()
     }
 }
