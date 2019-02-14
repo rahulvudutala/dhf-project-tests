@@ -1,7 +1,7 @@
 buildscript {
     repositories {
         maven {url 'http://distro.marklogic.com/nexus/repository/maven-snapshots/'}
-        mavenLocal()
+        //mavenLocal()
         jcenter()
     }
     dependencies {
@@ -48,7 +48,7 @@ dependencies {
     compile ('com.marklogic:marklogic-data-hub:4.1-SNAPSHOT') {
         exclude group: 'ch.qos.logback'
     }
-    compile ('com.marklogic:ml-gradle:3.10.2') {
+    compile ('com.marklogic:ml-gradle:3.12.0') {
         exclude group: 'ch.qos.logback'
     }
     testCompile localGroovy()

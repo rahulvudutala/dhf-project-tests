@@ -79,7 +79,8 @@ class E2EDeploymentTasksTest extends BaseTest {
     @Shared File hubTriggersDir = Paths.get(projectDir.toString(), HubConfig.HUB_CONFIG_DIR, "triggers").toFile()
 
     @Shared File mlSchemasDir = Paths.get(projectDir.toString(), "src", "main", "ml-schemas").toFile()
-
+    @Shared File hubSchemasDir = Paths.get(hubConfigDir.toString(), "schemas").toFile()
+    
     @Shared File tmpDir = Paths.get(projectDir.toString(), ".tmp").toFile()
 
     @Shared API api
@@ -893,6 +894,49 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlLoadSchemas').outcome == SUCCESS
-        assert (docCount == 2)
+        assert (docCount == 3)
+    }
+    
+    def "test deploy schemas from src/main/hub-internal-config/schemas" () {
+        given:
+        File hubSchemasConfig = Paths.get(hubSchemasDir.toString(), "ml-sch.xsd").toFile()
+        copyResourceToFile("ml-schemas/ml-sch.xsd", hubSchemasConfig)
+
+        when:
+        result = runTask('mlLoadSchemas')
+        String rf = getManageClient().getJson("/manage/v2/databases/"+getPropertyFromPropertiesFile("mlStagingSchemasDbName")
+                +"?view=counts").toString()
+        ObjectMapper mapper = new ObjectMapper()
+        JsonNode actualObj = mapper.readTree(rf)
+        int docCount = actualObj.get("database-counts").get("count-properties").get("documents").get("value").asInt()
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlLoadSchemas').outcome == SUCCESS
+        assert (docCount == 1)
+    }
+    
+    def "test mlReloadSchemas from ml-schemas and hub-internal-config/schemas directory" () {
+        given:
+        File hubSchemasConfig = Paths.get(hubSchemasDir.toString(), "ml-sch.xsd").toFile()
+        File mlSchemasConfig = Paths.get(hubSchemasDir.toString(), "ml-sch.xsd").toFile()
+        copyResourceToFile("ml-schemas/ml-sch.xsd", mlSchemasConfig)
+        copyResourceToFile("ml-schemas/ml-sch.xsd", hubSchemasConfig)
+        int finalDbDocCount = getFinalDocCount()
+
+        when:
+        result = runTask('mlReloadSchemas')
+        String rf = getManageClient().getJson("/manage/v2/databases/"+getPropertyFromPropertiesFile("mlFinalSchemasDbName")
+                +"?view=counts").toString()
+        ObjectMapper mapper = new ObjectMapper()
+        JsonNode actualObj = mapper.readTree(rf)
+        int docCount = actualObj.get("database-counts").get("count-properties").get("documents").get("value").asInt()
+
+        then:
+        notThrown(UnexpectedBuildFailure)
+        result.task(':mlReloadSchemas').outcome == SUCCESS
+        assert (docCount == 3)
+        // To verify bug DHFPROD-1675 (mlReloadSchemas deleting files from mlFinalDb). 
+        assert (finalDbDocCount == getFinalDocCount())
     }
 }
