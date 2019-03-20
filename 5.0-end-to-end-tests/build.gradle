@@ -1,0 +1,80 @@
+buildscript {
+    repositories {
+        maven {url 'http://distro.marklogic.com/nexus/repository/maven-snapshots/'}
+        mavenLocal()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.marklogic:ml-data-hub:5.0-SNAPSHOT"
+        classpath "com.marklogic:marklogic-data-hub:5.0-SNAPSHOT"
+    }
+}
+
+plugins {
+    id "groovy"
+    id "java-gradle-plugin"
+    id 'org.springframework.boot' version '2.0.6.RELEASE'
+    id "io.spring.dependency-management" version "1.0.5.RELEASE"
+}
+
+apply plugin: "com.marklogic.ml-data-hub"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+bootJar.enabled = false
+jar.enabled = true
+
+repositories {
+    jcenter()
+    mavenLocal()
+    mavenCentral()
+    maven { url 'http://repo.spring.io/milestone' }
+    maven { url 'http://developer.marklogic.com/maven2' }
+    maven { url "http://repository.cloudera.com/artifactory/cloudera-repos/" }
+    maven {url 'http://distro.marklogic.com/nexus/repository/maven-snapshots/'}
+}
+
+configurations {
+    mlcp {
+        resolutionStrategy {
+            force "xml-apis:xml-apis:1.4.01"
+        }
+    }
+}
+
+dependencies {
+    compile gradleApi()
+    compile ('com.marklogic:marklogic-data-hub:5.0-SNAPSHOT') {
+        exclude group: 'ch.qos.logback'
+    }
+    compile ('com.marklogic:ml-gradle:3.12.0') {
+        exclude group: 'ch.qos.logback'
+    }
+    testCompile localGroovy()
+    testCompile gradleTestKit()
+    testCompile 'xmlunit:xmlunit:1.3'
+    testCompile ('org.spockframework:spock-spring:1.1-groovy-2.4') {
+        exclude module: 'groovy-all'
+    }
+    testCompile('org.spockframework:spock-core:1.1-groovy-2.4') {
+        exclude module: 'groovy-all'
+    }
+    testCompile ('org.springframework.boot:spring-boot-starter-test:2.0.6.RELEASE')  {
+        exclude module: "logback-classic"      
+    }
+    testCompile 'commons-io:commons-io:2.4'
+    testCompile 'junit:junit:4.12'
+    testCompile 'com.marklogic:marklogic-xcc:9.0.7'
+    mlcp "com.marklogic:mlcp:9.0.7"
+}
+
+test {
+    testLogging {
+        // Make test events are logged and standard out or error is shown
+        events 'started','passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+        showStandardStreams = true
+    }
+    // include 'com/marklogic/gradle/integration/tests/**'
+}
