@@ -41,3 +41,5 @@ ml-datahub-tests/build
 # ignoring dhf-deployment-tests files
 dhf-deployment-tests/bin
 dhf-deployment-tests/build
+dhf-deployment-tests/src/main/hub-internal-config/databases/.keep
+dhf-deployment-tests/src/main/*
