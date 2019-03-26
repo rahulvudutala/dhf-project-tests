@@ -894,7 +894,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlLoadSchemas').outcome == SUCCESS
-        assert (docCount == 3)
+        assert (docCount == 5)
     }
     
     def "test deploy schemas from src/main/hub-internal-config/schemas" () {
@@ -935,7 +935,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlReloadSchemas').outcome == SUCCESS
-        assert (docCount == 3)
+        assert (docCount == 5)
         // To verify bug DHFPROD-1675 (mlReloadSchemas deleting files from mlFinalDb). 
         assert (finalDbDocCount == getFinalDocCount())
     }

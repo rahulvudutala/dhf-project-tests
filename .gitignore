@@ -43,3 +43,8 @@ dhf-deployment-tests/bin
 dhf-deployment-tests/build
 dhf-deployment-tests/src/main/hub-internal-config/databases/.keep
 dhf-deployment-tests/src/main/*
+
+
+# ignoring qs-datahub-codegen-api files
+qs-datahub-codegen-api/bin
+qs-datahub-codegen-api/build
