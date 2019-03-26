@@ -1,0 +1,9 @@
+{
+	"name": "Flow 3 Custom Step 5",
+	"description": "My Step 6 description",
+	"type": "custom",
+	"sourceDatabase": "",
+	"config": {
+		"custom": "options"
+	}
+}

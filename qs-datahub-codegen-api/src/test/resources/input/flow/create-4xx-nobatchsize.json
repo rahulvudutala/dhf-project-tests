@@ -1,0 +1,11 @@
+{
+    "id": "testFlow8",
+    "name": "testFlow8",
+    "description": "My testFlow8 flow desc",
+    "threadCount": 4,
+    "options": {
+        "key": "value",
+        "key2": "value1",
+        "key3": "value1"
+    }
+}

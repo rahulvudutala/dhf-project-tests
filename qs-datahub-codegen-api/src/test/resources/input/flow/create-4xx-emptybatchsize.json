@@ -1,0 +1,12 @@
+{
+    "id": "testFlow6",
+    "name": "testFlow6",
+    "description": "My testFlow6 flow desc",
+    "batchSize": "",
+    "threadCount": 4,
+    "options": {
+        "key": "value",
+        "key2": "value1",
+        "key3": "value1"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "id": "testFlow10",
+    "name": "testFlow10",
+    "description": "My testFlow10 flow desc",
+    "batchSize": 100,
+    "options": {
+        "key": "value",
+        "key2": "value1",
+        "key3": "value1"
+    }
+}

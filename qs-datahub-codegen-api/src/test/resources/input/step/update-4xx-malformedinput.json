@@ -1,0 +1,15 @@
+{
+	"id": "step-4-flow-3",
+	"name": "Flow 3 Custom Step",
+	"description": "My Step 4 description",
+	"type": "custom",
+	"sourceDatabase": "",
+	"targetDatabase": "staging",
+	"isValid": true,
+	"isRunning": false,
+	"config": {
+		"custom": "options"
+	},
+	"language": "en",
+	"version": "1"
+}

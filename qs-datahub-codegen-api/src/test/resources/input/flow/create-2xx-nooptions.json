@@ -1,0 +1,7 @@
+{
+    "id": "testFlow5",
+    "name": "testFlow5",
+    "description": "My testFlow5 flow desc",
+    "batchSize": 100,
+    "threadCount": 4
+}
