@@ -460,7 +460,7 @@ class BaseTest extends Specification {
 //            File gradleProps = Paths.get(projectDir.toString(), "gradle.properties").toFile()
 //            copyResourceToFile("gradle-custom.properties", gradleProps)
 //        }
-        runTask('hubInit')
+//        runTask('hubInit')
         loadPropertiesFile()
         getPropertiesFile()
 
