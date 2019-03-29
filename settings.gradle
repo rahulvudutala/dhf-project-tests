@@ -1,7 +1,7 @@
 rootProject.name = 'dhf-test-projects'
 //include ':empty-project'
 //include ':non-default-values-project'
-//include ':ml-datahub-tests'
+include ':ml-datahub-tests'
 include ':dhf-deployment-tests'
 //include ':5.0-end-to-end-tests'
 //include ':qs-datahub-codegen-api'
