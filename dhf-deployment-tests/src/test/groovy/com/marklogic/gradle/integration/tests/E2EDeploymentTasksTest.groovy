@@ -83,8 +83,6 @@ class E2EDeploymentTasksTest extends BaseTest {
     
     @Shared File tmpDir = Paths.get(projectDir.toString(), ".tmp").toFile()
 
-    @Shared String projectPath = ":dhf-deployment-tests"
-
     @Shared API api
 
     def "test deploy a new database from ml-config with custom index" () {
@@ -101,7 +99,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployDatabases').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployDatabases').outcome == SUCCESS
         assert (newDb.getCollectionLexicon() == false)
         assert (getCustomDbRangePathIndexSize(getPropertyFromPropertiesFile("mlNewDb1Name")) == 1)
     }
@@ -119,7 +117,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployDatabases').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployDatabases').outcome == SUCCESS
         assert (getCustomDbRangePathIndexSize(getPropertyFromPropertiesFile("mlFinalDbName")) == 1)
         copyResourceToFile("ml-config/databases/final-database.json", newDbConfig)
     }
@@ -139,7 +137,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployDatabases').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployDatabases').outcome == SUCCESS
         assert (custStagingDb.getSchemaDatabase().equals(stgSchemaDbName))
     }
 
@@ -163,7 +161,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployDatabases').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployDatabases').outcome == SUCCESS
         assert (newDb.databaseName.equals(newDbName))
         assert (newDb.getSchemaDatabase().equals(newDbSchemaDbName))
     }
@@ -182,7 +180,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployServers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployServers').outcome == SUCCESS
         assert (newServer.getPort() == Integer.parseInt(getPropertyFromPropertiesFile("mlNewAppserverPort")))
         assert (newServer.serverName.equals(getPropertyFromPropertiesFile("mlNewAppserverName")))
         assert (newServer.groupName.equals("Default"))
@@ -202,7 +200,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployServers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployServers').outcome == SUCCESS
         assert (custStagingServer.getPort() == Integer.parseInt(getPropertyFromPropertiesFile("mlStagingCustomPort")))
         assert (custStagingServer.serverName.equals(getPropertyFromPropertiesFile("mlStagingAppserverName")))
         assert (custStagingServer.contentDatabase.equals(getPropertyFromPropertiesFile("hubNewDb1Name")))
@@ -223,7 +221,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployServers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployServers').outcome == SUCCESS
         assert (custStagingServer.getPort() == Integer.parseInt(getPropertyFromPropertiesFile("mlStagingPort")))
         assert (custStagingServer.serverName.equals(getPropertyFromPropertiesFile("mlStagingAppserverName")))
         assert (custStagingServer.contentDatabase.equals(getPropertyFromPropertiesFile("mlStagingDbName")))
@@ -244,7 +242,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployServers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployServers').outcome == SUCCESS
         assert (newStagingServer.getPort() == Integer.parseInt(getPropertyFromPropertiesFile("hubNewAppserverPort")))
         assert (newStagingServer.serverName.equals(getPropertyFromPropertiesFile("hubNewAppserverName")))
         assert (newStagingServer.contentDatabase.equals(getPropertyFromPropertiesFile("hubNewDb1Name")))
@@ -265,7 +263,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployPrivileges').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployPrivileges').outcome == SUCCESS
         assert (mlPrivilege.getAction().equals("urn:dhf-deployment-tests:privilege:1"))
         assert (mlPrivilege.getKind().equals("execute"))
     }
@@ -284,7 +282,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployPrivileges').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployPrivileges').outcome == SUCCESS
         assert (hubPrivilege.getAction().equals("urn:dhf-deployment-tests:privilege:2"))
         assert (hubPrivilege.getKind().equals("execute"))
     }
@@ -304,7 +302,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildSuccess)
-        result.task(projectPath + ':mlDeployPrivileges').outcome == FAILED
+        result.task(':dhf-deployment-tests:mlDeployPrivileges').outcome == FAILED
         result.output.contains('Error occurred while sending PUT request')
         Files.deleteIfExists(Paths.get(projectDir, HubConfig.USER_CONFIG_DIR, "security",
                 "privileges", "privilege-3.json"))
@@ -327,7 +325,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployRoles').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployRoles').outcome == SUCCESS
         assert (mlRole.roleName.equals(getPropertyFromPropertiesFile("mlRoleName")))
         assert (mlRole.role.contains("manage-admin"))
     }
@@ -346,7 +344,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployRoles').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployRoles').outcome == SUCCESS
         assert (hubRole.roleName.equals(getPropertyFromPropertiesFile("hubRoleName")))
         assert (hubRole.role.contains("manage-admin"))
     }
@@ -367,7 +365,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployRoles').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployRoles').outcome == SUCCESS
         assert (combRole.roleName.equals(getPropertyFromPropertiesFile("combRoleName")))
         assert (combRole.description.equals("ml-config description"))
         assert (combRole.role.contains("rest-admin"))
@@ -387,7 +385,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployUsers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployUsers').outcome == SUCCESS
         assert (mlUser.userName.equals(getPropertyFromPropertiesFile("mlNewUsername")))
         assert (mlUser.role.contains(getPropertyFromPropertiesFile("mlRoleName")))
     }
@@ -406,7 +404,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployUsers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployUsers').outcome == SUCCESS
         assert (hubUser.userName.equals(getPropertyFromPropertiesFile("hubNewUsername")))
         assert (hubUser.role.contains(getPropertyFromPropertiesFile("hubRoleName")))
     }
@@ -427,7 +425,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployUsers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployUsers').outcome == SUCCESS
         assert (combUser.userName.equals(getPropertyFromPropertiesFile("combNewUsername")))
         assert (combUser.role.contains(getPropertyFromPropertiesFile("combRoleName")))
         assert (combUser.description.equals("A user from mlconfig"))
@@ -456,7 +454,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployCertificateAuthorities').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployCertificateAuthorities').outcome == SUCCESS
         assert (size == 70)
 
     }
@@ -484,7 +482,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployCertificateAuthorities').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployCertificateAuthorities').outcome == SUCCESS
         assert (size == 71)
     }
 
@@ -511,7 +509,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployCertificateTemplates').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployCertificateTemplates').outcome == SUCCESS
         assert (size == 1)
     }
 
@@ -538,7 +536,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployCertificateTemplates').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployCertificateTemplates').outcome == SUCCESS
         // 2 as one template is installed in previous test
         assert (size == 2)
     }
@@ -566,7 +564,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployProtectedPaths').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployProtectedPaths').outcome == SUCCESS
         assert (size == 1)
     }
 
@@ -593,7 +591,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployQueryRolesets').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployQueryRolesets').outcome == SUCCESS
         assert (size == 1)
     }
 
@@ -645,7 +643,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeploySecurity').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeploySecurity').outcome == SUCCESS
         assert (caCount == 72)
         assert (ctCount == 4)
         assert (protectedPathsSize == 2)
@@ -666,7 +664,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlClearModulesDatabase').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlClearModulesDatabase').outcome == SUCCESS
         assert (curCoreModCount == 0)
         assert (finalDocCount - curCoreModCount == diff)
     }
@@ -685,7 +683,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubInstallModules').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:hubInstallModules').outcome == SUCCESS
         assert (docCount == coreModCount + diff)
         assert (coreModCount == hubCoreModCount)
     }
@@ -715,7 +713,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubDeployUserModules').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:hubDeployUserModules').outcome == SUCCESS
         assert (getStagingDocCount() == stagingCount + 1)
         assert (getFinalDocCount() == finalCount + 1)
         assert (getModulesDocCount() == modCount + 2)
@@ -733,7 +731,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeleteModuleTimestampsFile').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeleteModuleTimestampsFile').outcome == SUCCESS
         assert (useModDepFile.exists() == false)
     }
 
@@ -752,7 +750,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlLoadModules').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlLoadModules').outcome == SUCCESS
 
         assert(getModulesDocCount("hub-core-module") == hubCoreModCount)
         // there will be 4 default docs also installed and ext/lib/sample-lib.xqy,
@@ -776,7 +774,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlReloadModules').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlReloadModules').outcome == SUCCESS
 
         assert(getModulesDocCount("hub-core-module") == hubCoreModCount)
         // there will be 4 default docs also installed and ext/lib/sample-lib.xqy,
@@ -798,7 +796,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlLoadModules').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlLoadModules').outcome == SUCCESS
         assert (getModulesDocCount() == modCount + 1)
     }
 
@@ -818,7 +816,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployUsers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployUsers').outcome == SUCCESS
         assert (secUser.userName.equals(getPropertyFromPropertiesFile("mlSecConfUsername")))
         assert (secUser.role.contains(getPropertyFromPropertiesFile("mlHubUserRole")))
     }
@@ -836,9 +834,10 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployTriggers').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlDeployTriggers').outcome == SUCCESS
         // There are already 3 docs in the triggers database
-        assert (size == 4)
+//        assert (size == 4)
+        assert (size == 1)
     }
 
     def "test deploy triggers from ml-config directory" () {
@@ -854,8 +853,9 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployTriggers').outcome == SUCCESS
-        assert (size == 5)
+        result.task(':dhf-deployment-tests:mlDeployTriggers').outcome == SUCCESS
+//        assert (size == 5)
+        assert (size == 2)
     }
 
     def "test deploy triggers from custom ml-config/databases/(name of triggers database)/triggers directory" () {
@@ -876,8 +876,9 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlDeployTriggers').outcome == SUCCESS
-        assert (size == 6)
+        result.task(':dhf-deployment-tests:mlDeployTriggers').outcome == SUCCESS
+//        assert (size == 6)
+        assert (size == 3)
     }
 
     def "test deploy schemas from ml-schemas" () {
@@ -895,8 +896,9 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlLoadSchemas').outcome == SUCCESS
-        assert (docCount == 5)
+        result.task(':dhf-deployment-tests:mlLoadSchemas').outcome == SUCCESS
+//        assert (docCount == 5)
+        assert (docCount == 1)
     }
 
     def "test deploy schemas from src/main/hub-internal-config/schemas" () {
@@ -914,7 +916,7 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlLoadSchemas').outcome == SUCCESS
+        result.task(':dhf-deployment-tests:mlLoadSchemas').outcome == SUCCESS
         assert (docCount == 1)
     }
 
@@ -936,8 +938,9 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlReloadSchemas').outcome == SUCCESS
-        assert (docCount == 5)
+        result.task(':dhf-deployment-tests:mlReloadSchemas').outcome == SUCCESS
+//        assert (docCount == 5)
+        assert (docCount == 1)
         // To verify bug DHFPROD-1675 (mlReloadSchemas deleting files from mlFinalDb).
         assert (finalDbDocCount == getFinalDocCount())
     }

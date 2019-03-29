@@ -60,7 +60,7 @@ class EndToEndTasksTest extends BaseTest {
         result = runTask('hubInit')
 
         then:
-        result.task(projectPath + ":hubInit").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubInit").outcome == SUCCESS
         pluginsDir.isDirectory() == true
         hubConfigDir.isDirectory() == true
         mlConfigDir.isDirectory() == true
@@ -70,7 +70,7 @@ class EndToEndTasksTest extends BaseTest {
         result = runTask('hubInit')
 
         then:
-        result.task(projectPath + ":hubInit").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubInit").outcome == SUCCESS
         pluginsDir.isDirectory() == true
         hubConfigDir.isDirectory() == true
         mlConfigDir.isDirectory() == true
@@ -93,7 +93,7 @@ class EndToEndTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.output.contains('entityName property is required. Supply the parameter with -PentityName=Yourentity') == true
-        result.task(projectPath + ':hubCreateEntity').outcome == FAILED
+        result.task(':ml-datahub-tests:hubCreateEntity').outcome == FAILED
         entitiesDir.isDirectory() == false
 
 
@@ -107,7 +107,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then: "test if entity directory is created and add entity.json file is added"
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubCreateEntity').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubCreateEntity').outcome == SUCCESS
         entitiesDir.isDirectory() == true
         prodEntityDir.isDirectory() == true
         copyResourceToFile("my-new-unique-product-test-entity-1.entity.json", destDir)
@@ -118,7 +118,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubCreateEntity').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubCreateEntity').outcome == SUCCESS
         destDir.exists() == true
 
 
@@ -137,7 +137,7 @@ class EndToEndTasksTest extends BaseTest {
         runTask('hubCreateEntity')
 
         then:
-        result.task(projectPath + ':hubCreateEntity').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubCreateEntity').outcome == SUCCESS
         orderEntityDir.exists() == true
         custEntityDir.exists() == true
         copyResourceToFile("my-new-unique-order-test-entity-1.entity.json", orderDestDir)
@@ -166,7 +166,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubSaveIndexes').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubSaveIndexes').outcome == SUCCESS
         entityConfigDatabasesDir.isDirectory() == true
         stagingFile.exists() == true
         finalFile.exists() == true
@@ -184,7 +184,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubSaveIndexes').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubSaveIndexes').outcome == SUCCESS
         entityConfigDatabasesDir.isDirectory() == true
         stagingFile.exists() == true
         finalFile.exists() == true
@@ -201,7 +201,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubSaveIndexes').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubSaveIndexes').outcome == SUCCESS
         entityConfigDatabasesDir.isDirectory() == true
         stagingFile.exists() == true
         finalFile.exists() == true
@@ -227,7 +227,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlUpdateIndexes').outcome == SUCCESS
+        result.task(':ml-datahub-tests:mlUpdateIndexes').outcome == SUCCESS
         getStagingRangePathIndexSize() == stagingIndexCount
         getFinalRangePathIndexSize() == finalIndexCount
 
@@ -238,7 +238,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlUpdateIndexes').outcome == SUCCESS
+        result.task(':ml-datahub-tests:mlUpdateIndexes').outcome == SUCCESS
         getStagingRangePathIndexSize() == stagingIndexCount + 1
         getFinalRangePathIndexSize() == finalIndexCount + 1
 
@@ -248,7 +248,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':mlUpdateIndexes').outcome == SUCCESS
+        result.task(':ml-datahub-tests:mlUpdateIndexes').outcome == SUCCESS
         getStagingRangePathIndexSize() == stagingIndexCount + 1
         getFinalRangePathIndexSize() == finalIndexCount + 1
         deleteRangePathIndexes("data-hub-STAGING")
@@ -266,7 +266,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubDeployUserModules').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubDeployUserModules').outcome == SUCCESS
         getStagingDocCount() == stagingDbCount + 3
         getFinalDocCount() == finalDbCount + 3
     }
@@ -295,7 +295,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubCreateInputFlow').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubCreateInputFlow').outcome == SUCCESS
         prodInputDir.isDirectory() == true
         flowDir.isDirectory() == true
         contentFile.isFile() == true
@@ -327,7 +327,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ':hubCreateInputFlow').outcome == SUCCESS
+        result.task(':ml-datahub-tests:hubCreateInputFlow').outcome == SUCCESS
         nonExistentEntityInputDir.isDirectory() == true
         flowDir.isDirectory() == true
         contentFile.isFile() == true
@@ -359,7 +359,7 @@ class EndToEndTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildSuccess)
         result.output.contains('entityName property is required')
-        result.task(projectPath + ":hubCreateInputFlow").outcome == FAILED
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == FAILED
 
 
         when: "flowName parameter is missing when running the task"
@@ -376,7 +376,7 @@ class EndToEndTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildSuccess)
         result.output.contains('flowName property is required')
-        result.task(projectPath + ":hubCreateInputFlow").outcome == FAILED
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == FAILED
 
 
         when: "any of dataFormat/pluginformat are missing, default values are set to json/sjs"
@@ -393,7 +393,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ":hubCreateInputFlow").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == SUCCESS
         defaultValueTestEntity.isDirectory() == true
         flowDir.isDirectory() == true
         contentFile.isFile() == true
@@ -428,7 +428,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ":hubCreateInputFlow").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == SUCCESS
         prodEntity.isDirectory() == true
         flowDir.isDirectory() == true
         contentFile.isFile() == true
@@ -463,7 +463,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ":hubCreateInputFlow").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == SUCCESS
         prodEntity.isDirectory() == true
         flowDir.isDirectory() == true
         contentFile.isFile() == true
@@ -498,7 +498,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ":hubCreateInputFlow").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == SUCCESS
         prodEntity.isDirectory() == true
         flowDir.isDirectory() == true
         contentFile.isFile() == true
@@ -533,7 +533,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ":hubCreateInputFlow").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == SUCCESS
         prodEntity.isDirectory() == true
         flowDir.isDirectory() == true
         contentFile.isFile() == true
@@ -567,7 +567,7 @@ class EndToEndTasksTest extends BaseTest {
 
         then:
         notThrown(UnexpectedBuildFailure)
-        result.task(projectPath + ":hubCreateInputFlow").outcome == SUCCESS
+        result.task(":ml-datahub-tests:hubCreateInputFlow").outcome == SUCCESS
         FileUtils.contentEquals(headersFile, oldHeadersFile) == false
     }
     //
