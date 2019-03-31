@@ -17,5 +17,5 @@
 
 package com.marklogic.integration.tests
 
-class E2EDeploymentTasksTest {
+class EndToEndFlowTests {
 }

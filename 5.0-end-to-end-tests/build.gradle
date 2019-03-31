@@ -71,11 +71,13 @@ dependencies {
 }
 
 test {
+    minHeapSize = "128m"
+    maxHeapSize = "768m"
     testLogging {
         // Make test events are logged and standard out or error is shown
         events 'started','passed', 'skipped', 'failed'
         exceptionFormat 'full'
         showStandardStreams = true
     }
-    // include 'com/marklogic/gradle/integration/tests/**'
+    include 'com/marklogic/gradle/integration/tests/**'
 }
