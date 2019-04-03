@@ -19,8 +19,7 @@ import java.util.Properties;
 
 public class TestsHelper {
 
-    String projectDir = new File("/Users/rvudutal/Documents/todelete/5.0/project-tests/learning").
-            getAbsolutePath();
+    String projectDir = new File("").getAbsolutePath();
     private HubConfigImpl _hubConfig;
     private HubConfigImpl _adminHubConfig;
     private DataHubImpl _dataHub;
@@ -63,8 +62,8 @@ public class TestsHelper {
         try {
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "flows").toString()));
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "steps").toString()));
-            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "plugins", "entities").toString()));
-            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "plugins", "mappings").toString()));
+            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "plugins").toString()));
+//            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "plugins", "mappings").toString()));
         } catch (IOException ie) {
             ie.printStackTrace();
         }
@@ -72,8 +71,9 @@ public class TestsHelper {
 
     protected void copyRunFlowResourceDocs() {
         try {
+            System.out.println(projectDir);
             FileUtils.copyDirectory(new File(Paths.get("src/test/resources/plugins").toString()),
-                    new File(Paths.get(projectDir,"plugins").toString()));
+                    new File(Paths.get("plugins").toString()));
 //            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/flows").toString()),
 //                    new File(Paths.get(projectDir,"flows").toString()));
 //            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/steps").toString()),
@@ -122,7 +122,7 @@ public class TestsHelper {
     }
 
     protected void setUpSpecs() {
-        runTask(":hubInit");
+        runTask(":5.0-end-to-end-tests:hubInit");
         loadPropertiesFile();
         configureHubConfig();
         configureAdminHubConfig();
