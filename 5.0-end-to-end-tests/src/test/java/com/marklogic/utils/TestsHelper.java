@@ -122,7 +122,6 @@ public class TestsHelper {
     }
 
     protected void setUpSpecs() {
-        runTask(":5.0-end-to-end-tests:hubInit");
         loadPropertiesFile();
         configureHubConfig();
         configureAdminHubConfig();

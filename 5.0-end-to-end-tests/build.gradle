@@ -81,3 +81,10 @@ test {
     }
     include 'com/marklogic/integration/tests/**'
 }
+
+task unDeployDHF (type: Exec) {
+    commandLine './gradlew', 'mlUndeploy -Pconfirm=true'
+}
+
+test.dependsOn("hubInit", "mlDeploy")
+test.finalizedBy("unDeployDHF")
