@@ -84,20 +84,40 @@ test {
 
 task unDeployDHF (type: Exec) {
     workingDir './'
-    commandLine './gradlew', 'mlUndeploy -Pconfirm=true'
+    commandLine './gradlew', 'mlUndeploy', '-Pconfirm=true'
 }
 
 task importData(type: com.marklogic.gradle.task.MlcpTask) {
     classpath = configurations.mlcp
-    input_file_path = "input/xml/orders/"
+    input_file_path = "input/orders/xml/"
     input_file_type = "documents"
     output_collections = "custom-order"
     output_permissions = "rest-reader,read,rest-writer,update"
-    output_uri_replace = "input/xml/orders/,''"
+    output_uri_replace = "/Users/rvudutal/Documents/git/dhf-project-tests-updated/dhf-project-tests/5.0-end-to-end-tests/input/orders/xml/,''"
     document_type = "xml"
     transform_module =  "/data-hub/5/transforms/mlcp-flow-transform.sjs"
     transform_namespace = "http://marklogic.com/data-hub/mlcp-flow-transform"
-    transform_param = "options={},flow-name=default-ingest"
+    transform_param = 'options={},flow-name=default-ingest'
+    command = "IMPORT"
+    mode = "local"
+    host = "localhost"
+    port = 8010
+    username = "admin"
+    password = "admin"
+    restrict_hosts = true
+}
+
+task importDataAsXML(type: com.marklogic.gradle.task.MlcpTask) {
+    classpath = configurations.mlcp
+    input_file_path = "input/orders/xml/"
+    input_file_type = "documents"
+    output_collections = "custom-order"
+    output_permissions = "rest-reader,read,rest-writer,update"
+    output_uri_replace = "/Users/rvudutal/Documents/git/dhf-project-tests-updated/dhf-project-tests/5.0-end-to-end-tests/input/orders/xml/,''"
+    document_type = "xml"
+    transform_module =  "/data-hub/5/transforms/mlcp-flow-transform.sjs"
+    transform_namespace = "http://marklogic.com/data-hub/mlcp-flow-transform"
+    transform_param = 'options={"outputFormat":"xml"},flow-name=default-ingest'
     command = "IMPORT"
     mode = "local"
     host = "localhost"
