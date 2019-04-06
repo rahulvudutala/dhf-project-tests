@@ -1,0 +1,6 @@
+{  
+   "mapping":{  
+      "name":"OrderMapping1"
+   },
+   "identifier":"cts.uris(null,null,cts.collectionQuery('default-ingest'))"
+}

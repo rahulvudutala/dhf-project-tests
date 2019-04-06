@@ -17,7 +17,12 @@ import org.gradle.testkit.runner.GradleRunner;
 import org.json.JSONException;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -96,7 +101,7 @@ public class TestsHelper {
             collectionName = "'" + collection + "'";
         }
         EvalResultIterator resultItr = runInDatabase("xdmp:estimate(fn:collection(" + collectionName + "))", database);
-        if (resultItr == null || ! resultItr.hasNext()) {
+        if (resultItr == null || !resultItr.hasNext()) {
             return count;
         }
         EvalResult res = resultItr.next();
@@ -106,7 +111,7 @@ public class TestsHelper {
 
     protected EvalResultIterator runInDatabase(String query, String databaseName) {
         ServerEvaluationCall eval;
-        switch(databaseName) {
+        switch (databaseName) {
             case HubConfig.DEFAULT_STAGING_NAME:
                 eval = _hubConfig.newStagingClient().newServerEval();
                 break;
@@ -125,26 +130,46 @@ public class TestsHelper {
         }
         try {
             return eval.xquery(query).eval();
-        }
-        catch(FailedRequestException e) {
+        } catch (FailedRequestException e) {
             e.printStackTrace();
             throw e;
         }
     }
 
-    protected String getJsonResource(String filePath) {
+    protected JsonNode getJsonResource(String filePath) {
         try {
             InputStream jsonDataStream = new FileInputStream(new File(filePath));
             ObjectMapper jsonDataMapper = new ObjectMapper();
-            return jsonDataMapper.readTree(jsonDataStream).toString();
+            return jsonDataMapper.readTree(jsonDataStream);
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
     }
 
+    protected String getOutputFormat(String filePath) {
+        String outputFormat = "json";
+        JsonNode fileContent = getJsonResource(filePath);
+        if (fileContent.get("outputFormat") != null && fileContent.get("outputFormat").equals("xml")) {
+            outputFormat = "xml";
+        }
+        return outputFormat;
+    }
 
-    protected void assertJsonEqual(String expected, String actual, boolean strict) {
+    protected String getCollectionFromIdentifier(String filePath) {
+        String collection = "default-ingest";
+        JsonNode fileContent = getJsonResource(filePath);
+        if (fileContent.get("identifier") != null) {
+            String identifier = fileContent.get("identifier").toString();
+            String collQueryPart = identifier.split("collectionQuery")[1];
+            int startIndex = collQueryPart.indexOf("'");
+            int endIndex = collQueryPart.lastIndexOf("'");
+            collection = collQueryPart.substring(startIndex + 1, endIndex);
+        }
+        return collection;
+    }
+
+    protected void assertJsonEqual(String expected, String actual) {
         try {
             JSONAssert.assertEquals(expected, actual, false);
         } catch (JSONException e) {
@@ -152,6 +177,29 @@ public class TestsHelper {
         }
     }
 
+    protected Document getXmlResource(String resourceName) {
+        InputStream inputStream = null;
+        try {
+            inputStream = new FileInputStream(resourceName);
+            return getXmlFromInputStream(inputStream);
+        } catch (FileNotFoundException fnf) {
+            fnf.printStackTrace();
+        }
+        return null;
+    }
+
+    protected Document getXmlFromInputStream(InputStream inputStream) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setIgnoringElementContentWhitespace(true);
+            factory.setNamespaceAware(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            return builder.parse(inputStream);
+        } catch (IOException | SAXException | ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
     protected void configureHubConfig() {
@@ -199,7 +247,6 @@ public class TestsHelper {
         configureHubConfig();
         configureAdminHubConfig();
     }
-
 
 
     public HubConfigImpl hubConfig() {

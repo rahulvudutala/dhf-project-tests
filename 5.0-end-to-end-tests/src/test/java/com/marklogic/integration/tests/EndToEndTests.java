@@ -1,5 +1,6 @@
 package com.marklogic.integration.tests;
 
+import com.marklogic.client.io.DOMHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.hub.HubConfig;
 import com.marklogic.hub.flow.RunFlowResponse;
@@ -12,12 +13,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInstance;
+import org.w3c.dom.Document;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class EndToEndTests extends TestsHelper {
@@ -43,7 +47,6 @@ public class EndToEndTests extends TestsHelper {
     }
 
     public void setUpDocs() {
-        System.out.println("inside setUpDocs ");
         // clear documents to make assertion easy for each test
         clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME, HubConfig.DEFAULT_JOB_NAME);
 
@@ -54,6 +57,9 @@ public class EndToEndTests extends TestsHelper {
         // run mlcp flow to ingest documents
         result = runTask(":5.0-end-to-end-tests:importData");
         assert (result.task(":5.0-end-to-end-tests:importData").getOutcome().toString().equals("SUCCESS"));
+
+//        result = runTask(":5.0-end-to-end-tests:importDataAsXML");
+//        assert (result.task(":5.0-end-to-end-tests:importDataAsXML").getOutcome().toString().equals("SUCCESS"));
     }
 
     @TestFactory
@@ -72,13 +78,15 @@ public class EndToEndTests extends TestsHelper {
 
             for (File optionsFile : listOfFiles) {
                 String optionsFileName = optionsFile.getName();
-                tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowName + "with options: " + optionsFileName,
+                String optionsFilePath = optionsPath + "/" + flowType + "/" + testType + "/" + optionsFileName;
+                String collection = getCollectionFromIdentifier(optionsFilePath);
+                tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowName + "with options as file: " + optionsFileName,
                         () -> {
                             setUpDocs();
                             int finalDbDocsCount = getDocCount("data-hub-FINAL", null);
                             BuildResult result = runTask(":5.0-end-to-end-tests" + ":hubRunFlow",
                                     "-PflowName=" + flowName,
-                                    "-PoptionsFile=" + optionsPath + "/" + flowType + "/" + testType + "/" + optionsFileName);
+                                    "-PoptionsFile=" + optionsFilePath);
                             BuildTask taskResult = result.task(":5.0-end-to-end-tests:hubRunFlow");
 
                             // verify the taskoutcome to be true
@@ -90,16 +98,16 @@ public class EndToEndTests extends TestsHelper {
                             assert (runFlowStatus == true);
 
                             // verify the docs count
-                            int docsInIngestColl = getDocCount("data-hub-FINAL", "default-ingest");
-                            assert(finalDbDocsCount + docsInIngestColl == getDocCount("data-hub-FINAL", null));
-                            System.out.println(getDocCount("data-hub-FINAL", null));
+                            int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
+                            int docsInFinalIngestColl = getDocCount("data-hub-FINAL", collection);
+                            assert (finalDbDocsCount + docsInStagingIngestColl == getDocCount("data-hub-FINAL", null));
 
                             // verify the job and provenance count
                             System.out.println(getDocCount("data-hub-JOBS", null));
 
                             // verify the harmonized doc
-                            if (docsInIngestColl != 0) {
-                                getAndVerifyDocumentsFromDatabase(inputXmlFileName, optionsFileName);
+                            if (docsInFinalIngestColl != 0) {
+                                getAndVerifyDocumentsFromDatabase(inputXmlFileName, optionsFilePath);
                             }
 
                             // TODO: verify the provenance doc
@@ -113,10 +121,11 @@ public class EndToEndTests extends TestsHelper {
 
             for (File optionsFileN : listOfFilesN) {
                 String optionsFileNameN = optionsFileN.getName();
-                tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowNameN + "with options: " + optionsFileNameN, () -> {
+                String optionsFilePathN = optionsPath + "/" + flowTypeN + "/" + testTypeN + "/" + optionsFileNameN;
+                tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowNameN + "with optionsFile: " + optionsFileNameN, () -> {
                     setUpDocs();
                     BuildResult resultN = runTask(":5.0-end-to-end-tests" + ":hubRunFlow", "-PflowName=" + flowNameN,
-                            "-PoptionsFile=" + optionsPath + "/" + flowTypeN + "/" + testTypeN + "/" + optionsFileNameN);
+                            "-PoptionsFile=" + optionsFilePathN);
                     assert (resultN.task(":5.0-end-to-end-tests:hubRunFlow").getOutcome().toString().equals("SUCCESS"));
 
                     // verify the step status
@@ -126,7 +135,84 @@ public class EndToEndTests extends TestsHelper {
 
                     // verify doc count
                     assert (0 == getDocCount("data-hub-FINAL", "default-ingest"));
-                    System.out.println(getDocCount("data-hub-FINAL", null));
+
+                    // verify the job count
+                    System.out.println(getDocCount("data-hub-JOBS", null));
+                }));
+            }
+        });
+
+
+        allCombos(() -> {
+            String flowName = "default-mapping", flowType = "default-mapping", testType = "positive";
+            File optionDir = new File(optionsPath + "/" + flowType + "/" + testType);
+            File[] listOfFiles = optionDir.listFiles();
+
+            File inputXmlDocsDir = new File("input/orders/xml");
+            File[] inputXmlFiles = inputXmlDocsDir.listFiles();
+            String inputXmlFileName = inputXmlFiles[0].getName();
+
+            for (File optionsFile : listOfFiles) {
+                String optionsFileName = optionsFile.getName();
+                String optionsFilePath = optionsPath + "/" + flowType + "/" + testType + "/" + optionsFileName;
+                String options = getJsonResource(optionsFilePath).toString();
+                String collection = getCollectionFromIdentifier(optionsFilePath);
+                tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowName + "with options as string: " + optionsFileName,
+                        () -> {
+                            setUpDocs();
+                            int finalDbDocsCount = getDocCount("data-hub-FINAL", null);
+                            BuildResult result = runTask(":5.0-end-to-end-tests" + ":hubRunFlow",
+                                    "-PflowName=" + flowName,
+                                    "-Poptions=" + options);
+                            BuildTask taskResult = result.task(":5.0-end-to-end-tests:hubRunFlow");
+
+                            // verify the taskoutcome to be true
+                            assert (taskResult.getOutcome().toString().equals("SUCCESS"));
+
+                            // verify the step status
+                            String taskOutput = result.getOutput();
+                            boolean runFlowStatus = parseAndVerifyRunFlowStatus(taskOutput);
+                            assert (runFlowStatus == true);
+
+                            // verify the docs count
+                            int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
+                            int docsInFinalIngestColl = getDocCount("data-hub-FINAL", collection);
+                            assert (finalDbDocsCount + docsInStagingIngestColl == getDocCount("data-hub-FINAL", null));
+
+                            // verify the job and provenance count
+                            System.out.println(getDocCount("data-hub-JOBS", null));
+
+                            // verify the harmonized doc
+                            if (docsInFinalIngestColl != 0) {
+                                getAndVerifyDocumentsFromDatabase(inputXmlFileName, optionsFilePath);
+                            }
+
+                            // TODO: verify the provenance doc
+                        }));
+            }
+
+
+            String flowNameN = "default-mapping", flowTypeN = "default-mapping", testTypeN = "negative";
+            File optionDirN = new File(optionsPath + "/" + flowTypeN + "/" + testTypeN);
+            File[] listOfFilesN = optionDirN.listFiles();
+
+            for (File optionsFileN : listOfFilesN) {
+                String optionsFileNameN = optionsFileN.getName();
+                String optionsFilePathN = optionsPath + "/" + flowTypeN + "/" + testTypeN + "/" + optionsFileNameN;
+                String optionsN = getJsonResource(optionsFilePathN).toString();
+                tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowNameN + "with options as string: " + optionsFileNameN, () -> {
+                    setUpDocs();
+                    BuildResult resultN = runTask(":5.0-end-to-end-tests" + ":hubRunFlow", "-PflowName=" + flowNameN,
+                            "-Poptions=" + optionsN);
+                    assert (resultN.task(":5.0-end-to-end-tests:hubRunFlow").getOutcome().toString().equals("SUCCESS"));
+
+                    // verify the step status
+                    String taskOutput = resultN.getOutput();
+                    boolean runFlowStatus = parseAndVerifyRunFlowStatus(taskOutput);
+                    assert (runFlowStatus == false);
+
+                    // verify doc count
+                    assert (0 == getDocCount("data-hub-FINAL", "default-ingest"));
 
                     // verify the job count
                     System.out.println(getDocCount("data-hub-JOBS", null));
@@ -137,14 +223,12 @@ public class EndToEndTests extends TestsHelper {
     }
 
     private boolean parseAndVerifyRunFlowStatus(String taskOutput) {
-        System.out.println(taskOutput);
         Gson g = new Gson();
         RunFlowResponse runFlowResponse = null;
         boolean runFlowStatus = true;
         int jsonStartIndex = taskOutput.indexOf('{');
         int jsonEndIndex = taskOutput.lastIndexOf('}');
         String jsonString = taskOutput.substring(jsonStartIndex, jsonEndIndex + 1);
-//        System.out.println(jsonString);
         runFlowResponse = g.fromJson(jsonString, RunFlowResponse.class);
 //        runFlowResponse = new ObjectMapper().readValue(jsonString, RunFlowResponse.class);
         Map<String, Job> stepResponses = runFlowResponse.getStepResponses();
@@ -158,13 +242,16 @@ public class EndToEndTests extends TestsHelper {
         return runFlowStatus;
     }
 
-    private void getAndVerifyDocumentsFromDatabase(String docName, String optionsFile) {
-        System.out.println(docName);
-        String actual = finalDocMgr.read(docName).next().getContent(new StringHandle()).get();
-//        Document actual = finalDocMgr.read(docName).next().getContent(new DOMHandle()).get();
-        String expected = getJsonResource("src/test/resources/output/orders/10248.json");
-        assertJsonEqual(expected, actual, true);
-        System.out.println(actual);
-        System.out.println(expected);
+    private void getAndVerifyDocumentsFromDatabase(String docName, String optionsFileLoc) {
+        String outputFormat = getOutputFormat(optionsFileLoc);
+        if (outputFormat.equals("json")) {
+            String actual = finalDocMgr.read(docName).next().getContent(new StringHandle()).get();
+            String expected = getJsonResource("src/test/resources/output/orders/10248.json").toString();
+            assertJsonEqual(expected, actual);
+        } else {
+            Document actual = finalDocMgr.read(docName).next().getContent(new DOMHandle()).get();
+            Document expected = getXmlResource("src/test/resources/output/orders/10248.xml");
+            assertXMLEqual(expected, actual);
+        }
     }
 }
