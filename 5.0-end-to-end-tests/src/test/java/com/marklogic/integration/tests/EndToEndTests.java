@@ -250,12 +250,12 @@ public class EndToEndTests extends TestsHelper {
         String filePath = "src/test/resources/output/orders/";
         String fileName = null;
 
-        if (mappingVersion == null || mappingVersion.equals("2")) {
+        if(optionsFileLoc.contains("wrong-mapping-options.json")) {
+            fileName = "10248-null-data";
+        } else if (mappingVersion == null || mappingVersion.equals("2")) {
             mappingVersion = "2";
             fileName = "10248-" + mappingVersion;
-        }
-
-        if (mappingVersion != null && mappingVersion.equals("1")) {
+        } else if (mappingVersion != null && mappingVersion.equals("1")) {
             fileName = "10248-" + mappingVersion;
         }
 
