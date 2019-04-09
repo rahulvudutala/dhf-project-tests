@@ -147,7 +147,7 @@ public class TestsHelper {
         return null;
     }
 
-    protected String getOutputFormat(String filePath) {
+    protected String getOutputFormatFromOptionsFile(String filePath) {
         String outputFormat = "json";
         JsonNode fileContent = getJsonResource(filePath);
         if (fileContent.get("outputFormat") != null && fileContent.get("outputFormat").equals("xml")) {
@@ -156,7 +156,7 @@ public class TestsHelper {
         return outputFormat;
     }
 
-    protected String getCollectionFromIdentifier(String filePath) {
+    protected String getCollectionFromIdentifierFromOptionsFile(String filePath) {
         String collection = "default-ingest";
         JsonNode fileContent = getJsonResource(filePath);
         if (fileContent.get("identifier") != null) {
@@ -167,6 +167,16 @@ public class TestsHelper {
             collection = collQueryPart.substring(startIndex + 1, endIndex);
         }
         return collection;
+    }
+
+    protected String getMappingVersionFromOptionsFile(String filePath) {
+        JsonNode fileContent = getJsonResource(filePath);
+        String version = null;
+        if (fileContent.get("mapping") != null) {
+            JsonNode mapping = fileContent.get("mapping");
+            version = mapping.get("version") != null ? mapping.get("version").toString() : null;
+        }
+        return version;
     }
 
     protected void assertJsonEqual(String expected, String actual) {

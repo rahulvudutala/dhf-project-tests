@@ -1,0 +1,7 @@
+{  
+   "mapping":{  
+      "name":"IncorrectOrderMapping",
+      "version":1
+   },
+   "identifier":"cts.uris(null,null,cts.collectionQuery('default-ingest'))"
+}

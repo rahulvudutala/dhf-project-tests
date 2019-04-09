@@ -72,14 +72,14 @@ public class EndToEndTests extends TestsHelper {
             File optionDir = new File(optionsPath + "/" + flowType + "/" + testType);
             File[] listOfFiles = optionDir.listFiles();
 
-            File inputXmlDocsDir = new File("input/orders/xml");
-            File[] inputXmlFiles = inputXmlDocsDir.listFiles();
-            String inputXmlFileName = inputXmlFiles[0].getName();
+            File inputDocsDir = new File("input/orders/");
+            File[] inputFiles = inputDocsDir.listFiles();
+            String inputFileName = inputFiles[0].getName();
 
             for (File optionsFile : listOfFiles) {
                 String optionsFileName = optionsFile.getName();
                 String optionsFilePath = optionsPath + "/" + flowType + "/" + testType + "/" + optionsFileName;
-                String collection = getCollectionFromIdentifier(optionsFilePath);
+                String collection = getCollectionFromIdentifierFromOptionsFile(optionsFilePath);
                 tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowName + "with options as file: " + optionsFileName,
                         () -> {
                             setUpDocs();
@@ -107,7 +107,7 @@ public class EndToEndTests extends TestsHelper {
 
                             // verify the harmonized doc
                             if (docsInFinalIngestColl != 0) {
-                                getAndVerifyDocumentsFromDatabase(inputXmlFileName, optionsFilePath);
+                                getAndVerifyDocumentsFromDatabase(inputFileName, optionsFilePath);
                             }
 
                             // TODO: verify the provenance doc
@@ -148,15 +148,16 @@ public class EndToEndTests extends TestsHelper {
             File optionDir = new File(optionsPath + "/" + flowType + "/" + testType);
             File[] listOfFiles = optionDir.listFiles();
 
-            File inputXmlDocsDir = new File("input/orders/xml");
-            File[] inputXmlFiles = inputXmlDocsDir.listFiles();
-            String inputXmlFileName = inputXmlFiles[0].getName();
+            File inputDocsDir = new File("input/orders/");
+            File[] inputFiles = inputDocsDir.listFiles();
+            String inputFileNameJson = inputFiles[0].getName();
+            String inputFileNameXml = inputFiles[1].getName();
 
             for (File optionsFile : listOfFiles) {
                 String optionsFileName = optionsFile.getName();
                 String optionsFilePath = optionsPath + "/" + flowType + "/" + testType + "/" + optionsFileName;
                 String options = getJsonResource(optionsFilePath).toString();
-                String collection = getCollectionFromIdentifier(optionsFilePath);
+                String collection = getCollectionFromIdentifierFromOptionsFile(optionsFilePath);
                 tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowName + "with options as string: " + optionsFileName,
                         () -> {
                             setUpDocs();
@@ -184,7 +185,8 @@ public class EndToEndTests extends TestsHelper {
 
                             // verify the harmonized doc
                             if (docsInFinalIngestColl != 0) {
-                                getAndVerifyDocumentsFromDatabase(inputXmlFileName, optionsFilePath);
+                                getAndVerifyDocumentsFromDatabase(inputFileNameJson, optionsFilePath);
+                                getAndVerifyDocumentsFromDatabase(inputFileNameXml, optionsFilePath);
                             }
 
                             // TODO: verify the provenance doc
@@ -243,14 +245,32 @@ public class EndToEndTests extends TestsHelper {
     }
 
     private void getAndVerifyDocumentsFromDatabase(String docName, String optionsFileLoc) {
-        String outputFormat = getOutputFormat(optionsFileLoc);
+        String outputFormat = getOutputFormatFromOptionsFile(optionsFileLoc);
+        String mappingVersion = getMappingVersionFromOptionsFile(optionsFileLoc);
+        String filePath = "src/test/resources/output/orders/";
+        String fileName = null;
+
+        if (mappingVersion == null || mappingVersion.equals("2")) {
+            mappingVersion = "2";
+            fileName = "10248-" + mappingVersion;
+        }
+
+        if (mappingVersion != null && mappingVersion.equals("1")) {
+            fileName = "10248-" + mappingVersion;
+        }
+
         if (outputFormat.equals("json")) {
-            String actual = finalDocMgr.read(docName).next().getContent(new StringHandle()).get();
-            String expected = getJsonResource("src/test/resources/output/orders/10248.json").toString();
+            String expected = null;
+            String actual = finalDocMgr.read("/json/" + docName).next().getContent(new StringHandle()).get();
+            if(docName.contains(".json")) {
+                expected = getJsonResource( filePath + "jsonTojson/" + fileName + ".json").toString();
+            } else {
+                expected = getJsonResource(filePath + "xmlTojson/" + fileName + ".json").toString();
+            }
             assertJsonEqual(expected, actual);
         } else {
-            Document actual = finalDocMgr.read(docName).next().getContent(new DOMHandle()).get();
-            Document expected = getXmlResource("src/test/resources/output/orders/10248.xml");
+            Document actual = finalDocMgr.read("/xml/" + docName).next().getContent(new DOMHandle()).get();
+            Document expected = getXmlResource(filePath + ".xml");
             assertXMLEqual(expected, actual);
         }
     }

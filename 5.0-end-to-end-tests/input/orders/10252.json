@@ -1,0 +1,36 @@
+{
+   "@OrderID": "10252",
+   "CustomerID": "SUPRD",
+   "EmployeeID": "4",
+   "OrderDate": "1996-07-09T14:27:32",
+   "RequiredDate": "1996-08-06T11:55:58",
+   "ShippedDate": "1996-07-11T09:16:43",
+   "ShipVia": "2",
+   "Freight": "51.3000",
+   "ShipName": "Suprêmes délices",
+   "ShipAddress": "Boulevard Tirou, 255",
+   "ShipCity": "Charleroi",
+   "ShipRegion": [],
+   "ShipPostalCode": "B-6000",
+   "ShipCountry": "Belgium",
+   "OrderDetails": [
+      {
+         "ProductID": "20",
+         "UnitPrice": "64.8000",
+         "Quantity": "40",
+         "Discount": "0.05"
+      },
+      {
+         "ProductID": "33",
+         "UnitPrice": "2.0000",
+         "Quantity": "25",
+         "Discount": "0.05"
+      },
+      {
+         "ProductID": "60",
+         "UnitPrice": "27.2000",
+         "Quantity": "40",
+         "Discount": "0"
+      }
+   ]
+}

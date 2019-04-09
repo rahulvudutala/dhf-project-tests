@@ -1,6 +1,6 @@
 {
   "language" : "zxx",
-  "name" : "OrderMapping1",
+  "name" : "IncorrectOrderMapping",
   "description" : "Default description",
   "version" : 1,
   "targetEntityType" : "http://example.org/Order-0.0.1/Order",
@@ -10,14 +10,8 @@
     "OrderID" : {
       "sourcedFrom" : "@OrderID"
     },
-    "CustomerID" : {
-      "sourcedFrom" : "CustomerID"
-    },
-    "ShippedDate" : {
-      "sourcedFrom" : "ShippedDate"
-    },
-    "ShipAddress" : {
-      "sourcedFrom" : "ShipAddress"
+    "CustID" : {
+      "sourcedFrom" : "CustID"
     }
   }
 }

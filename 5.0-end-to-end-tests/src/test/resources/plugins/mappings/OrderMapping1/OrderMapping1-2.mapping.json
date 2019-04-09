@@ -2,7 +2,7 @@
   "language" : "zxx",
   "name" : "OrderMapping1",
   "description" : "Default description",
-  "version" : 1,
+  "version" : 2,
   "targetEntityType" : "http://example.org/Order-0.0.1/Order",
   "sourceContext" : "//",
   "sourceURI" : "",
@@ -12,6 +12,9 @@
     },
     "CustomerID" : {
       "sourcedFrom" : "CustomerID"
+    },
+    "OrderDate" : {
+      "sourcedFrom" : "OrderDate"
     },
     "ShippedDate" : {
       "sourcedFrom" : "ShippedDate"
