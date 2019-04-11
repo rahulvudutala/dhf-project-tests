@@ -1,0 +1,36 @@
+{
+   "OrderID": "10251",
+   "CustomerID": "VICTE",
+   "EmployeeID": "3",
+   "OrderDate": "1996-07-08T21:52:11",
+   "RequiredDate": "1996-08-05T19:00:54",
+   "ShippedDate": "1996-07-15T02:50:30",
+   "ShipVia": "1",
+   "Freight": "41.3400",
+   "ShipName": "Victuailles en stock",
+   "ShipAddress": "2, rue du Commerce",
+   "ShipCity": "Lyon",
+   "ShipRegion": [],
+   "ShipPostalCode": "69004",
+   "ShipCountry": "France",
+   "OrderDetails": [
+      {
+         "ProductID": "22",
+         "UnitPrice": "16.8000",
+         "Quantity": "6",
+         "Discount": "0.05"
+      },
+      {
+         "ProductID": "57",
+         "UnitPrice": "15.6000",
+         "Quantity": "15",
+         "Discount": "0.05"
+      },
+      {
+         "ProductID": "65",
+         "UnitPrice": "16.8000",
+         "Quantity": "20",
+         "Discount": "0"
+      }
+   ]
+}

@@ -9,8 +9,10 @@ import com.marklogic.client.eval.EvalResultIterator;
 import com.marklogic.client.eval.ServerEvaluationCall;
 import com.marklogic.hub.ApplicationConfig;
 import com.marklogic.hub.HubConfig;
+import com.marklogic.hub.error.DataHubConfigurationException;
 import com.marklogic.hub.impl.DataHubImpl;
 import com.marklogic.hub.impl.HubConfigImpl;
+import com.marklogic.hub.legacy.flow.DataFormat;
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
@@ -23,6 +25,12 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -39,7 +47,13 @@ public class TestsHelper {
     protected String optionsPath = "src/test/resources/options";
 
     protected void allCombos(ComboListener listener) {
-        listener.onCombo();
+        DataFormat[] dataFormats = {DataFormat.JSON};
+        DataFormat[] outputFormats = {DataFormat.JSON, DataFormat.XML};
+        for (DataFormat dataFormat : dataFormats) {
+            for (DataFormat outputFormat : outputFormats) {
+                listener.onCombo(dataFormat.toString(), outputFormat.toString());
+            }
+        }
     }
 
     protected BuildResult runTask(String... task) {
@@ -82,7 +96,6 @@ public class TestsHelper {
 
     protected void copyRunFlowResourceDocs() {
         try {
-            System.out.println(projectDir);
             FileUtils.copyDirectory(new File(Paths.get("src/test/resources/plugins").toString()),
                     new File(Paths.get("plugins").toString()));
 //            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/flows").toString()),
@@ -187,6 +200,18 @@ public class TestsHelper {
         }
     }
 
+    protected void debugOutput(Document xmldoc, OutputStream os) {
+        try {
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            transformer.transform(new DOMSource(xmldoc), new StreamResult(os));
+        } catch (TransformerException e) {
+            throw new DataHubConfigurationException(e);
+        }
+    }
+
     protected Document getXmlResource(String resourceName) {
         InputStream inputStream = null;
         try {
@@ -210,7 +235,6 @@ public class TestsHelper {
             throw new RuntimeException(e);
         }
     }
-
 
     protected void configureHubConfig() {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();

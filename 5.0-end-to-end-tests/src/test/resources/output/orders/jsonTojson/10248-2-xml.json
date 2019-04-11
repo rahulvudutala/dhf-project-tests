@@ -6,11 +6,11 @@
     ],
     "instance": {
       "Order": {
-        "OrderID": null,
-        "CustomerID": null,
-        "OrderDate": null,
-        "ShippedDate": null,
-        "ShipAddress": null
+        "OrderID": "10248",
+        "CustomerID": "VINET",
+        "OrderDate": "1996-07-04T14:25:55",
+        "ShippedDate": "1996-07-16T04:00:12",
+        "ShipAddress": "59 rue de l'Abbaye"
       },
       "info": {
         "title": "Order",
@@ -25,7 +25,7 @@
         ],
         "instance": {
           "Order": {
-            "@OrderID": "10248",
+            "OrderID": "10248",
             "CustomerID": "VINET",
             "EmployeeID": "5",
             "OrderDate": "1996-07-04T14:25:55",

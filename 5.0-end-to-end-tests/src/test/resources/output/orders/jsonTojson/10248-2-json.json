@@ -4,9 +4,9 @@
     "triples": [],
     "instance": {
       "Order": {
-        "OrderID": null,
+        "OrderID": "10248",
         "CustomerID": "VINET",
-        "OrderDate": null,
+        "OrderDate": "1996-07-04T14:25:55",
         "ShippedDate": "1996-07-16T04:00:12",
         "ShipAddress": "59 rue de l'Abbaye"
       },
@@ -20,7 +20,7 @@
         "headers": {},
         "triples": [],
         "instance": {
-          "@OrderID": "10248",
+          "OrderID": "10248",
           "CustomerID": "VINET",
           "EmployeeID": "5",
           "OrderDate": "1996-07-04T14:25:55",

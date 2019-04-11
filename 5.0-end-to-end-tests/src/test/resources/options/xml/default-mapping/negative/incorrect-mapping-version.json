@@ -1,0 +1,8 @@
+{  
+   "mapping":{  
+      "name":"OrderMapping1",
+      "version":5
+   },
+   "identifier":"cts.uris(null,null,cts.collectionQuery('default-ingest'))",
+   "outputFormat":"xml"
+}

@@ -7,8 +7,8 @@
   "sourceContext" : "//",
   "sourceURI" : "",
   "properties" : {
-    "OrderID" : {
-      "sourcedFrom" : "@OrderID"
+    "OrdID" : {
+      "sourcedFrom" : "OrdID"
     },
     "CustID" : {
       "sourcedFrom" : "CustID"

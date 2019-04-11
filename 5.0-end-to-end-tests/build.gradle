@@ -72,7 +72,7 @@ dependencies {
 test {
     useJUnitPlatform()
     minHeapSize = "128m"
-    maxHeapSize = "768m"
+    maxHeapSize = "2g"
     testLogging {
         // Make test events are logged and standard out or error is shown
         events 'started','passed', 'skipped', 'failed'
@@ -89,7 +89,7 @@ task unDeployDHF (type: Exec) {
 
 task importData(type: com.marklogic.gradle.task.MlcpTask) {
     classpath = configurations.mlcp
-    input_file_path = "input/orders"
+    input_file_path = "input/orders/simple-docs"
     input_file_type = "documents"
     output_collections = "custom-order"
     output_permissions = "rest-reader,read,rest-writer,update"
@@ -108,7 +108,7 @@ task importData(type: com.marklogic.gradle.task.MlcpTask) {
 
 task importDataAsXML(type: com.marklogic.gradle.task.MlcpTask) {
     classpath = configurations.mlcp
-    input_file_path = "input/orders"
+    input_file_path = "input/orders/simple-docs"
     input_file_type = "documents"
     output_collections = "custom-order"
     output_permissions = "rest-reader,read,rest-writer,update"
