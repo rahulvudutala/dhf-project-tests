@@ -47,7 +47,7 @@ public class TestsHelper {
     protected String optionsPath = "src/test/resources/options";
 
     protected void allCombos(ComboListener listener) {
-        DataFormat[] dataFormats = {DataFormat.JSON};
+        DataFormat[] dataFormats = {DataFormat.JSON, DataFormat.XML};
         DataFormat[] outputFormats = {DataFormat.JSON, DataFormat.XML};
         for (DataFormat dataFormat : dataFormats) {
             for (DataFormat outputFormat : outputFormats) {

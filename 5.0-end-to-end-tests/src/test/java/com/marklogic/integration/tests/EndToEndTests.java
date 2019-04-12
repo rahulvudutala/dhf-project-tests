@@ -313,8 +313,10 @@ public class EndToEndTests extends TestsHelper {
                 if (docName.contains(".json")) {
                     expectedDoc = getXmlResource(filePath + "xmlToxml/" + fileName + "-json" + ".xml");
                 } else {
-                    expectedDoc = getXmlResource(filePath + "xmlToxml/" + fileName + "-xm;" + ".xml");
+                    expectedDoc = getXmlResource(filePath + "xmlToxml/" + fileName + "-xml" + ".xml");
                 }
+//                debugOutput(expectedDoc, System.out);
+//                debugOutput(actualDoc, System.out);
                 assertXMLEqual(expectedDoc, actualDoc);
             }
         }
