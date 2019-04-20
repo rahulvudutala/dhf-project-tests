@@ -2,5 +2,7 @@
    "mapping":{  
       "name":"OrderMapping1"
    },
-   "identifier":"cts.uris(null,null,cts.collectionQuery('default-ingest'))"
+   "sourceQuery":"cts.uris(null,null,cts.collectionQuery('default-ingestion'))",
+   "sourceDatabase": "data-hub-STAGING",
+   "targetDatabase": "data-hub-FINAL"
 }

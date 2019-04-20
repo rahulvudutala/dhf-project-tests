@@ -2,5 +2,7 @@
    "mapping":{
       "name":"OrderMapping1",
       "version":1
-   }
+   },
+   "sourceDatabase": "data-hub-STAGING",
+   "targetDatabase": "data-hub-FINAL"
 }

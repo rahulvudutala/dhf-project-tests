@@ -3,5 +3,7 @@
       "name":"OrderMapping1",
       "version":1
    },
-   "outputFormat":"xml"
+   "outputFormat":"xml",
+   "sourceDatabase": "data-hub-STAGING",
+   "targetDatabase": "data-hub-FINAL"
 }

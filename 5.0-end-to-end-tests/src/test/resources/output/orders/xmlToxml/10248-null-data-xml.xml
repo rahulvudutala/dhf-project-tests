@@ -10,21 +10,21 @@
             <version>0.0.1</version>
         </info>
         <Order>
-            <OrderID></OrderID>
-            <CustomerID></CustomerID>
-            <OrderDate></OrderDate>
-            <ShippedDate></ShippedDate>
-            <ShipAddress></ShipAddress>
+            <OrderID>10248</OrderID>
+            <CustomerID>VINET</CustomerID>
+            <OrderDate>1996-07-04T14:25:55</OrderDate>
+            <ShippedDate>1996-07-16T04:00:12</ShippedDate>
+            <ShipAddress>59 rue de l'Abbaye</ShipAddress>
         </Order>
     </instance>
     <attachments>
-        <envelope xmlns="">
+        <envelope>
             <headers>
             </headers>
             <triples>
             </triples>
             <instance>
-                <Order>
+                <Order xmlns="">
                     <OrderID>10248</OrderID>
                     <CustomerID>VINET</CustomerID>
                     <EmployeeID>5</EmployeeID>
@@ -62,6 +62,7 @@
                     </OrderDetails>
                 </Order>
             </instance>
+            <attachments/>
         </envelope>
     </attachments>
 </envelope>

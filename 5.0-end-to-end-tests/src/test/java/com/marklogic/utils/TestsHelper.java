@@ -48,11 +48,9 @@ public class TestsHelper {
 
     protected void allCombos(ComboListener listener) {
         DataFormat[] dataFormats = {DataFormat.JSON, DataFormat.XML};
-        DataFormat[] outputFormats = {DataFormat.JSON, DataFormat.XML};
+//        DataFormat[] outputFormats = {DataFormat.JSON, DataFormat.XML};
         for (DataFormat dataFormat : dataFormats) {
-            for (DataFormat outputFormat : outputFormats) {
-                listener.onCombo(dataFormat.toString(), outputFormat.toString());
-            }
+            listener.onCombo(dataFormat.toString(), dataFormat.toString());
         }
     }
 
@@ -87,8 +85,10 @@ public class TestsHelper {
     protected void deleteResourceDocs() {
         try {
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "flows").toString()));
-            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "steps").toString()));
+            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "step-definitions").toString()));
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "plugins").toString()));
+//            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "entities").toString()));
+//            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "mappings").toString()));
         } catch (IOException ie) {
             ie.printStackTrace();
         }
@@ -96,8 +96,8 @@ public class TestsHelper {
 
     protected void copyRunFlowResourceDocs() {
         try {
-            FileUtils.copyDirectory(new File(Paths.get("src/test/resources/plugins").toString()),
-                    new File(Paths.get("plugins").toString()));
+            FileUtils.copyDirectory(new File(Paths.get(projectDir, "src/test/resources/plugins/").toString()),
+                    new File(Paths.get(projectDir).toString()));
 //            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/flows").toString()),
 //                    new File(Paths.get(projectDir,"flows").toString()));
 //            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/steps").toString()),
@@ -170,10 +170,10 @@ public class TestsHelper {
     }
 
     protected String getCollectionFromIdentifierFromOptionsFile(String filePath) {
-        String collection = "default-ingest";
+        String collection = "default-ingestion";
         JsonNode fileContent = getJsonResource(filePath);
-        if (fileContent.get("identifier") != null) {
-            String identifier = fileContent.get("identifier").toString();
+        if (fileContent.get("sourceQuery") != null) {
+            String identifier = fileContent.get("sourceQuery").toString();
             String collQueryPart = identifier.split("collectionQuery")[1];
             int startIndex = collQueryPart.indexOf("'");
             int endIndex = collQueryPart.lastIndexOf("'");

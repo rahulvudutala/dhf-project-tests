@@ -1,10 +1,11 @@
+/*
 package com.marklogic.integration.tests;
 
 import com.marklogic.client.io.DOMHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.hub.HubConfig;
 import com.marklogic.hub.flow.RunFlowResponse;
-import com.marklogic.hub.step.RunStepResponse;
+import com.marklogic.hub.job.Job;
 import com.marklogic.utils.TestsHelper;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.gradle.internal.impldep.com.google.gson.Gson;
@@ -25,10 +26,10 @@ import java.util.logging.Logger;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EndToEndTests extends TestsHelper {
+public class EndToEndTestsBkp extends TestsHelper {
 
     private static final Logger log =
-            Logger.getLogger(EndToEndTests.class.getName());
+            Logger.getLogger(EndToEndTestsBkp.class.getName());
 
     @BeforeAll
     public void init() {
@@ -61,7 +62,6 @@ public class EndToEndTests extends TestsHelper {
         if (dataFormat.equals("json")) {
             result = runTask(":5.0-end-to-end-tests:importData");
             assert (result.task(":5.0-end-to-end-tests:importData").getOutcome().toString().equals("SUCCESS"));
-            assert (getDocCount("data-hub-STAGING", "default-ingest") == 6);
         } else {
             result = runTask(":5.0-end-to-end-tests:importDataAsXML");
             assert (result.task(":5.0-end-to-end-tests:importDataAsXML").getOutcome().toString().equals("SUCCESS"));
@@ -79,7 +79,7 @@ public class EndToEndTests extends TestsHelper {
             File[] listOfFiles = optionDir.listFiles();
 
             String inputDocsLoc = "input/orders/simple-docs";
-            if (dataFormat.equals("json")) {
+            if(dataFormat.equals("json")) {
                 inputDocsLoc = inputDocsLoc.concat("/json/");
             } else {
                 inputDocsLoc = inputDocsLoc.concat("/xml/");
@@ -87,7 +87,7 @@ public class EndToEndTests extends TestsHelper {
             File inputDocsDir = new File(inputDocsLoc);
             File[] inputFiles = inputDocsDir.listFiles();
             String inputFileNameJson = inputFiles[0].getName();
-//            String inputFileNameXml = inputFiles[1].getName();
+            String inputFileNameXml = inputFiles[1].getName();
 
             for (File optionsFile : listOfFiles) {
                 String optionsFileName = optionsFile.getName();
@@ -120,13 +120,10 @@ public class EndToEndTests extends TestsHelper {
 
                             // verify the harmonized doc
                             if (docsInFinalIngestColl != 0) {
-                                if (dataFormat.equals("json")) {
-                                    getAndVerifyDocumentsFromDatabase(inputFileNameJson, optionsFilePath, outputFormat,
-                                            dataFormat);
-                                } else {
-                                    getAndVerifyDocumentsFromDatabase(inputFileNameJson, optionsFilePath, outputFormat,
-                                            dataFormat);
-                                }
+                                getAndVerifyDocumentsFromDatabase(inputFileNameJson, optionsFilePath, outputFormat,
+                                        dataFormat);
+                                getAndVerifyDocumentsFromDatabase(inputFileNameXml, optionsFilePath, outputFormat,
+                                        dataFormat);
                             }
 
                             // TODO: verify the provenance doc
@@ -167,17 +164,10 @@ public class EndToEndTests extends TestsHelper {
             File optionDir = new File(optionsPath + "/" + outputFormat + "/" + flowType + "/" + testType);
             File[] listOfFiles = optionDir.listFiles();
 
-            String inputDocsLoc = "input/orders/simple-docs";
-            if (dataFormat.equals("json")) {
-                inputDocsLoc = inputDocsLoc.concat("/json/");
-            } else {
-                inputDocsLoc = inputDocsLoc.concat("/xml/");
-            }
-            File inputDocsDir = new File(inputDocsLoc);
-
+            File inputDocsDir = new File("input/orders/simple-docs/");
             File[] inputFiles = inputDocsDir.listFiles();
             String inputFileNameJson = inputFiles[0].getName();
-//            String inputFileNameXml = inputFiles[1].getName();
+            String inputFileNameXml = inputFiles[1].getName();
 
             for (File optionsFile : listOfFiles) {
                 String optionsFileName = optionsFile.getName();
@@ -211,13 +201,10 @@ public class EndToEndTests extends TestsHelper {
 
                             // verify the harmonized doc
                             if (docsInFinalIngestColl != 0) {
-                                if (dataFormat.equals("json")) {
-                                    getAndVerifyDocumentsFromDatabase(inputFileNameJson, optionsFilePath, outputFormat,
-                                            dataFormat);
-                                } else {
-                                    getAndVerifyDocumentsFromDatabase(inputFileNameJson, optionsFilePath, outputFormat,
-                                            dataFormat);
-                                }
+                                getAndVerifyDocumentsFromDatabase(inputFileNameJson, optionsFilePath, outputFormat,
+                                        dataFormat);
+                                getAndVerifyDocumentsFromDatabase(inputFileNameXml, optionsFilePath, outputFormat,
+                                        dataFormat);
                             }
 
                             // TODO: verify the provenance doc
@@ -264,9 +251,9 @@ public class EndToEndTests extends TestsHelper {
         String jsonString = taskOutput.substring(jsonStartIndex, jsonEndIndex + 1);
         runFlowResponse = g.fromJson(jsonString, RunFlowResponse.class);
 //        runFlowResponse = new ObjectMapper().readValue(jsonString, RunFlowResponse.class);
-        Map<String, RunStepResponse> stepResponses = runFlowResponse.getStepResponses();
+        Map<String, Job> stepResponses = runFlowResponse.getStepResponses();
         for (String stepId : stepResponses.keySet()) {
-            RunStepResponse stepJob = stepResponses.get(stepId);
+            Job stepJob = stepResponses.get(stepId);
             if (!stepJob.isSuccess()) {
                 runFlowStatus = false;
                 break;
@@ -312,8 +299,8 @@ public class EndToEndTests extends TestsHelper {
                 } else {
                     expectedDoc = getXmlResource(filePath + "jsonToxml/" + fileName + "-xml" + ".xml");
                 }
-                debugOutput(expectedDoc, System.out);
-                debugOutput(actualDoc, System.out);
+//                debugOutput(expectedDoc, System.out);
+//                debugOutput(actualDoc, System.out);
                 assertXMLEqual(expectedDoc, actualDoc);
             }
         } else {
@@ -332,10 +319,11 @@ public class EndToEndTests extends TestsHelper {
                 } else {
                     expectedDoc = getXmlResource(filePath + "xmlToxml/" + fileName + "-xml" + ".xml");
                 }
-                debugOutput(expectedDoc, System.out);
-                debugOutput(actualDoc, System.out);
+//                debugOutput(expectedDoc, System.out);
+//                debugOutput(actualDoc, System.out);
                 assertXMLEqual(expectedDoc, actualDoc);
             }
         }
     }
 }
+*/

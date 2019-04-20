@@ -3,5 +3,7 @@
       "name":"OrderMapping1",
       "version":1
    },
-   "identifier":"cts.uris(null,null,cts.collectionQuery('some-collection'))"
+   "sourceQuery":"cts.uris(null,null,cts.collectionQuery('some-collection'))",
+   "sourceDatabase": "data-hub-STAGING",
+   "targetDatabase": "data-hub-FINAL"
 }
