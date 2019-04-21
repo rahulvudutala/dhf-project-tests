@@ -25,28 +25,14 @@ import java.util.logging.Logger;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EndToEndTests extends TestsHelper {
+public class DefaultMappingFlowTests extends TestsHelper {
 
     private static final Logger log =
-            Logger.getLogger(EndToEndTests.class.getName());
+            Logger.getLogger(DefaultMappingFlowTests.class.getName());
 
     @BeforeAll
     public void init() {
-
-        XMLUnit.setIgnoreWhitespace(true);
-        // initialize hub config
-        setUpSpecs();
-
-        // Clear modules in data-hub-STAGING, data-hub-FINAL, data-hub-JOBS
-        // and data-hub-MODULES
-        clearDatabases(HubConfig.DEFAULT_STAGING_NAME,
-                HubConfig.DEFAULT_FINAL_NAME, HubConfig.DEFAULT_JOB_NAME);
-
-        // clear docs in flows, steps, mappings, entities directories
-        deleteResourceDocs();
-
-        // copy docs in src/test/resources to flows/steps/mappings/entities dirs
-        copyRunFlowResourceDocs();
+        initializeProject();
     }
 
     public void setUpDocs(String dataFormat) {

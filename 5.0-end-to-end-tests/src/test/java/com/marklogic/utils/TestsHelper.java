@@ -14,10 +14,13 @@ import com.marklogic.hub.impl.DataHubImpl;
 import com.marklogic.hub.impl.HubConfigImpl;
 import com.marklogic.hub.legacy.flow.DataFormat;
 import org.apache.commons.io.FileUtils;
+import org.custommonkey.xmlunit.XMLUnit;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.json.JSONException;
 import org.skyscreamer.jsonassert.JSONAssert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -37,6 +40,8 @@ import java.util.Properties;
 
 public class TestsHelper {
 
+    private static Logger logger = LoggerFactory.getLogger(TestsHelper.class);
+
     String projectDir = new File("").getAbsolutePath();
     private HubConfigImpl _hubConfig;
     private HubConfigImpl _adminHubConfig;
@@ -45,6 +50,23 @@ public class TestsHelper {
     public GenericDocumentManager finalDocMgr;
     private Properties props;
     protected String optionsPath = "src/test/resources/options";
+
+    protected void initializeProject() {
+        XMLUnit.setIgnoreWhitespace(true);
+        // initialize hub config
+        setUpSpecs();
+
+        // Clear modules in data-hub-STAGING, data-hub-FINAL, data-hub-JOBS
+        // and data-hub-MODULES
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME,
+                HubConfig.DEFAULT_FINAL_NAME, HubConfig.DEFAULT_JOB_NAME);
+
+        // clear docs in flows, steps, mappings, entities directories
+        deleteResourceDocs();
+
+        // copy docs in src/test/resources to flows/steps/mappings/entities dirs
+        copyRunFlowResourceDocs();
+    }
 
     protected void allCombos(ComboListener listener) {
         DataFormat[] dataFormats = {DataFormat.JSON, DataFormat.XML};
@@ -77,18 +99,21 @@ public class TestsHelper {
         eval.addVariable("databases", String.join(",", databases));
         EvalResultIterator result = eval.xquery(installer).eval();
         if (result.hasNext()) {
-//            logger.error(result.next().getString());
-            System.out.println(result.next().getString());
+            logger.error(result.next().getString());
         }
     }
 
     protected void deleteResourceDocs() {
+        File entitiesPath = new File(Paths.get(projectDir, "entities").toString());
+        File mappingsPath = new File(Paths.get(projectDir, "entities").toString());
         try {
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "flows").toString()));
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "step-definitions").toString()));
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "plugins").toString()));
-//            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "entities").toString()));
-//            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "mappings").toString()));
+            if (entitiesPath.isFile())
+                FileUtils.cleanDirectory(new File(Paths.get(projectDir, "entities").toString()));
+            if (mappingsPath.isFile())
+                FileUtils.cleanDirectory(new File(Paths.get(projectDir, "mappings").toString()));
         } catch (IOException ie) {
             ie.printStackTrace();
         }
