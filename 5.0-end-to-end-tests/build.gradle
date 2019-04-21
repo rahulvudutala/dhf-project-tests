@@ -79,7 +79,7 @@ test {
         exceptionFormat 'full'
         showStandardStreams = true
     }
-    include 'com/marklogic/integration/tests/EndToEndTests.class'
+    include 'com/marklogic/integration/tests/DefaultMappingFlowTests.class'
 }
 
 task unDeployDHF (type: Exec) {

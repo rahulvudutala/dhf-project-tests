@@ -6,7 +6,6 @@ import com.marklogic.hub.HubConfig;
 import com.marklogic.hub.flow.RunFlowResponse;
 import com.marklogic.hub.step.RunStepResponse;
 import com.marklogic.utils.TestsHelper;
-import org.custommonkey.xmlunit.XMLUnit;
 import org.gradle.internal.impldep.com.google.gson.Gson;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
