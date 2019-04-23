@@ -2,6 +2,7 @@ package com.marklogic.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marklogic.client.FailedRequestException;
 import com.marklogic.client.document.GenericDocumentManager;
 import com.marklogic.client.eval.EvalResult;
@@ -36,7 +37,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 public class TestsHelper {
 
@@ -76,6 +79,16 @@ public class TestsHelper {
         }
     }
 
+    protected void e2eFlowCombos(FlowComboListener listener) {
+        DataFormat[] dataFormats = {DataFormat.JSON, DataFormat.XML};
+        boolean[] cmdLineOptions = {true, false};
+        for (boolean option : cmdLineOptions) {
+            for (DataFormat dataFormat : dataFormats) {
+                listener.onCombo(option, dataFormat.toString(), dataFormat.toString());
+            }
+        }
+    }
+
     protected BuildResult runTask(String... task) {
         return GradleRunner.create()
                 .withProjectDir(new File(projectDir))
@@ -109,7 +122,6 @@ public class TestsHelper {
         try {
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "flows").toString()));
             FileUtils.cleanDirectory(new File(Paths.get(projectDir, "step-definitions").toString()));
-            FileUtils.cleanDirectory(new File(Paths.get(projectDir, "plugins").toString()));
             if (entitiesPath.isFile())
                 FileUtils.cleanDirectory(new File(Paths.get(projectDir, "entities").toString()));
             if (mappingsPath.isFile())
@@ -259,6 +271,45 @@ public class TestsHelper {
         } catch (IOException | SAXException | ParserConfigurationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected JsonNode getFinalOptions(String optionsFilePath, String flowPath, String stepNumber) {
+        JsonNode cmdLineOptions = getJsonResource(optionsFilePath);
+        JsonNode flowOptions = getJsonResource(flowPath).get("options");
+        JsonNode stepOptions = getJsonResource(flowPath).get("steps").get(stepNumber).get("options");
+
+        JsonNode finalOptions = combineOptions(stepOptions, flowOptions);
+        finalOptions = combineOptions(cmdLineOptions, finalOptions);
+        return finalOptions;
+    }
+
+    protected JsonNode getFinalOptions(String flowPath, String stepNumber) {
+        JsonNode flowOptions = getJsonResource(flowPath).get("options");
+        JsonNode stepOptions = getJsonResource(flowPath).get("steps").get(stepNumber).get("options");
+        JsonNode finalOptions = combineOptions(stepOptions, flowOptions);
+        return finalOptions;
+    }
+
+    private JsonNode combineOptions(JsonNode highRankOptions, JsonNode lowRankOptions) {
+        Set<String> keys = getNodeKeySet(highRankOptions);
+        for (String keyNode : keys) {
+            if (lowRankOptions.get(keyNode) != null) {
+                if (highRankOptions.get(keyNode).isObject()) {
+                    combineOptions(highRankOptions.get(keyNode), lowRankOptions.get(keyNode));
+                } else {
+                    ((ObjectNode) lowRankOptions).put(keyNode, highRankOptions.get(keyNode).toString());
+                }
+            } else {
+                ((ObjectNode) lowRankOptions).put(keyNode, highRankOptions.get(keyNode).toString());
+            }
+        }
+        return lowRankOptions;
+    }
+
+    private Set<String> getNodeKeySet(JsonNode optionsNode) {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> optionsMap = mapper.convertValue(optionsNode, Map.class);
+        return optionsMap.keySet();
     }
 
     protected void configureHubConfig() {
