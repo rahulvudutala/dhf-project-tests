@@ -36,7 +36,7 @@ public class DefaultMappingFlowTests extends TestsHelper {
 
     public void setUpDocs(String dataFormat) {
         // clear documents to make assertion easy for each test
-        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME, HubConfig.DEFAULT_JOB_NAME);
+        clearDatabases(HubConfig.DEFAULT_STAGING_NAME, HubConfig.DEFAULT_FINAL_NAME);
 
         // Load user modules into the datahub
         BuildResult result = runTask(":5.0-end-to-end-tests:mlLoadModules");
@@ -51,6 +51,9 @@ public class DefaultMappingFlowTests extends TestsHelper {
             result = runTask(":5.0-end-to-end-tests:importDataAsXML");
             assert (result.task(":5.0-end-to-end-tests:importDataAsXML").getOutcome().toString().equals("SUCCESS"));
         }
+
+        // clearing jobs database here to count job docs generated after mapping
+        clearDatabases(HubConfig.DEFAULT_JOB_NAME);
     }
 
     @TestFactory
@@ -95,13 +98,10 @@ public class DefaultMappingFlowTests extends TestsHelper {
                             boolean runFlowStatus = parseAndVerifyRunFlowStatus(taskOutput);
                             assert (runFlowStatus == true);
 
-                            // verify the docs count
+                            // verify the docs count in final database
                             int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
                             int docsInFinalIngestColl = getDocCount("data-hub-FINAL", collection);
                             assert (finalDbDocsCount + docsInStagingIngestColl == getDocCount("data-hub-FINAL", null));
-
-                            // verify the job and provenance count
-                            System.out.println(getDocCount("data-hub-JOBS", null));
 
                             // verify the harmonized doc
                             if (docsInFinalIngestColl != 0) {
@@ -113,6 +113,11 @@ public class DefaultMappingFlowTests extends TestsHelper {
                                             dataFormat);
                                 }
                             }
+
+                            // verify the job and provenance count
+                            double batches = Math.ceil((double) docsInStagingIngestColl / 100);
+                            int finalBatches = (int) batches;
+                            assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
 
                             // TODO: verify the provenance doc
                         }));
@@ -126,6 +131,7 @@ public class DefaultMappingFlowTests extends TestsHelper {
             for (File optionsFileN : listOfFilesN) {
                 String optionsFileNameN = optionsFileN.getName();
                 String optionsFilePathN = optionDirN + "/" + optionsFileNameN;
+                String collection = getCollectionFromIdentifierFromOptionsFile(optionsFilePathN);
                 tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowNameN + "with optionsFile: " + optionsFileNameN, () -> {
                     setUpDocs(outputFormat);
                     BuildResult resultN = runTask(":5.0-end-to-end-tests" + ":hubRunFlow", "-PflowName=" + flowNameN,
@@ -141,7 +147,10 @@ public class DefaultMappingFlowTests extends TestsHelper {
                     assert (0 == getDocCount("data-hub-FINAL", "default-ingest"));
 
                     // verify the job count
-                    System.out.println(getDocCount("data-hub-JOBS", null));
+                    int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
+                    double batches = Math.ceil((double) docsInStagingIngestColl / 100);
+                    int finalBatches = (int) batches;
+                    assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
                 }));
             }
         });
@@ -191,9 +200,6 @@ public class DefaultMappingFlowTests extends TestsHelper {
                             int docsInFinalIngestColl = getDocCount("data-hub-FINAL", collection);
                             assert (finalDbDocsCount + docsInStagingIngestColl == getDocCount("data-hub-FINAL", null));
 
-                            // verify the job and provenance count
-                            System.out.println(getDocCount("data-hub-JOBS", null));
-
                             // verify the harmonized doc
                             if (docsInFinalIngestColl != 0) {
                                 if (dataFormat.equals("json")) {
@@ -204,6 +210,11 @@ public class DefaultMappingFlowTests extends TestsHelper {
                                             dataFormat);
                                 }
                             }
+
+                            // verify the job and provenance count
+                            double batches = Math.ceil((double) docsInStagingIngestColl / 100);
+                            int finalBatches = (int) batches;
+                            assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
 
                             // TODO: verify the provenance doc
                         }));
@@ -218,6 +229,7 @@ public class DefaultMappingFlowTests extends TestsHelper {
                 String optionsFileNameN = optionsFileN.getName();
                 String optionsFilePathN = optionDirN + "/" + optionsFileNameN;
                 String optionsN = getJsonResource(optionsFilePathN).toString();
+                String collection = getCollectionFromIdentifierFromOptionsFile(optionsFilePathN);
                 tests.add(DynamicTest.dynamicTest("run flow " + "- " + flowNameN + "with options as string: " + optionsFileNameN, () -> {
                     setUpDocs(outputFormat);
                     BuildResult resultN = runTask(":5.0-end-to-end-tests" + ":hubRunFlow", "-PflowName=" + flowNameN,
@@ -233,6 +245,10 @@ public class DefaultMappingFlowTests extends TestsHelper {
                     assert (0 == getDocCount("data-hub-FINAL", "default-ingest"));
 
                     // verify the job count
+                    int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
+                    double batches = Math.ceil((double) docsInStagingIngestColl / 100);
+                    int finalBatches = (int) batches;
+                    assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
                     System.out.println(getDocCount("data-hub-JOBS", null));
                 }));
             }
