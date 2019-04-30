@@ -11,11 +11,14 @@ import com.marklogic.client.eval.ServerEvaluationCall;
 import com.marklogic.hub.ApplicationConfig;
 import com.marklogic.hub.HubConfig;
 import com.marklogic.hub.error.DataHubConfigurationException;
+import com.marklogic.hub.flow.RunFlowResponse;
 import com.marklogic.hub.impl.DataHubImpl;
 import com.marklogic.hub.impl.HubConfigImpl;
 import com.marklogic.hub.legacy.flow.DataFormat;
+import com.marklogic.hub.step.RunStepResponse;
 import org.apache.commons.io.FileUtils;
 import org.custommonkey.xmlunit.XMLUnit;
+import org.gradle.internal.impldep.com.google.gson.Gson;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.json.JSONException;
@@ -135,8 +138,8 @@ public class TestsHelper {
         try {
             FileUtils.copyDirectory(new File(Paths.get(projectDir, "src/test/resources/plugins/").toString()),
                     new File(Paths.get(projectDir).toString()));
-//            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/flows").toString()),
-//                    new File(Paths.get(projectDir,"flows").toString()));
+            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/flows").toString()),
+                    new File(Paths.get(projectDir,"flows").toString()));
 //            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/steps").toString()),
 //                    new File(Paths.get(projectDir,"steps").toString()));
         } catch (IOException ie) {
@@ -197,13 +200,12 @@ public class TestsHelper {
         return null;
     }
 
-    protected String getOutputFormatFromOptionsFile(String filePath) {
-        String outputFormat = "json";
+    protected int getBatchSizeFromOptionsFile(String filePath) {
         JsonNode fileContent = getJsonResource(filePath);
-        if (fileContent.get("outputFormat") != null && fileContent.get("outputFormat").equals("xml")) {
-            outputFormat = "xml";
+        if (fileContent.get("batchSize") != null) {
+            return fileContent.get("batchSize").intValue();
         }
-        return outputFormat;
+        return 100;
     }
 
     protected String getCollectionFromIdentifierFromOptionsFile(String filePath) {
@@ -310,6 +312,42 @@ public class TestsHelper {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> optionsMap = mapper.convertValue(optionsNode, Map.class);
         return optionsMap.keySet();
+    }
+
+    protected boolean parseAndVerifyRunFlowStatus(String taskOutput) {
+        Gson g = new Gson();
+        RunFlowResponse runFlowResponse = null;
+        boolean runFlowStatus = true;
+        int jsonStartIndex = taskOutput.indexOf('{');
+        int jsonEndIndex = taskOutput.lastIndexOf('}');
+        String jsonString = taskOutput.substring(jsonStartIndex, jsonEndIndex + 1);
+        runFlowResponse = g.fromJson(jsonString, RunFlowResponse.class);
+        Map<String, RunStepResponse> stepResponses = runFlowResponse.getStepResponses();
+        for (String stepId : stepResponses.keySet()) {
+            RunStepResponse stepJob = stepResponses.get(stepId);
+            if (!stepJob.isSuccess()) {
+                runFlowStatus = false;
+                break;
+            }
+        }
+        return runFlowStatus;
+    }
+
+    protected String getPropertyFromRunFlowStatus(String taskOutput, String propertyName, int stepId) {
+        Gson g = new Gson();
+        ObjectMapper mapper = new ObjectMapper();
+
+        RunFlowResponse runFlowResponse = null;
+        int jsonStartIndex = taskOutput.indexOf('{');
+        int jsonEndIndex = taskOutput.lastIndexOf('}');
+        String jsonString = taskOutput.substring(jsonStartIndex, jsonEndIndex + 1);
+        runFlowResponse = g.fromJson(jsonString, RunFlowResponse.class);
+
+        Map<String, RunStepResponse> stepResponses = runFlowResponse.getStepResponses();
+        RunStepResponse stepJob = stepResponses.get(Integer.toString(stepId));
+
+        JsonNode jsonNode = mapper.convertValue(stepJob, JsonNode.class);
+        return jsonNode.get(propertyName).toString();
     }
 
     protected void configureHubConfig() {

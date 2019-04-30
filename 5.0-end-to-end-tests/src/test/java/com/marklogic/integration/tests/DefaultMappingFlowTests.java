@@ -115,7 +115,8 @@ public class DefaultMappingFlowTests extends TestsHelper {
                             }
 
                             // verify the job and provenance count
-                            double batches = Math.ceil((double) docsInStagingIngestColl / 100);
+                            int batchSize = getBatchSizeFromOptionsFile(optionsFilePath);
+                            double batches = Math.ceil((double) docsInStagingIngestColl / batchSize);
                             int finalBatches = (int) batches;
                             assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
 
@@ -147,6 +148,7 @@ public class DefaultMappingFlowTests extends TestsHelper {
                     assert (0 == getDocCount("data-hub-FINAL", "default-ingest"));
 
                     // verify the job count
+                    int batchSize = getBatchSizeFromOptionsFile(optionsFilePathN);
                     int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
                     double batches = Math.ceil((double) docsInStagingIngestColl / 100);
                     int finalBatches = (int) batches;
@@ -212,6 +214,7 @@ public class DefaultMappingFlowTests extends TestsHelper {
                             }
 
                             // verify the job and provenance count
+                            int batchSize = getBatchSizeFromOptionsFile(optionsFilePath);
                             double batches = Math.ceil((double) docsInStagingIngestColl / 100);
                             int finalBatches = (int) batches;
                             assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
@@ -245,35 +248,15 @@ public class DefaultMappingFlowTests extends TestsHelper {
                     assert (0 == getDocCount("data-hub-FINAL", "default-ingest"));
 
                     // verify the job count
+                    int batchSize = getBatchSizeFromOptionsFile(optionsFilePathN);
                     int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
                     double batches = Math.ceil((double) docsInStagingIngestColl / 100);
                     int finalBatches = (int) batches;
                     assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
-                    System.out.println(getDocCount("data-hub-JOBS", null));
                 }));
             }
         });
         return tests;
-    }
-
-    private boolean parseAndVerifyRunFlowStatus(String taskOutput) {
-        Gson g = new Gson();
-        RunFlowResponse runFlowResponse = null;
-        boolean runFlowStatus = true;
-        int jsonStartIndex = taskOutput.indexOf('{');
-        int jsonEndIndex = taskOutput.lastIndexOf('}');
-        String jsonString = taskOutput.substring(jsonStartIndex, jsonEndIndex + 1);
-        runFlowResponse = g.fromJson(jsonString, RunFlowResponse.class);
-//        runFlowResponse = new ObjectMapper().readValue(jsonString, RunFlowResponse.class);
-        Map<String, RunStepResponse> stepResponses = runFlowResponse.getStepResponses();
-        for (String stepId : stepResponses.keySet()) {
-            RunStepResponse stepJob = stepResponses.get(stepId);
-            if (!stepJob.isSuccess()) {
-                runFlowStatus = false;
-                break;
-            }
-        }
-        return runFlowStatus;
     }
 
     private void getAndVerifyDocumentsFromDatabase(String docName, String optionsFileLoc,
