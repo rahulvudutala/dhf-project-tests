@@ -1,0 +1,23 @@
+{
+  "language" : "zxx",
+  "name" : "OrderMappingXml",
+  "description" : "Default description",
+  "version" : 1,
+  "targetEntityType" : "http://example.org/Order-0.0.1/Order",
+  "sourceContext" : "/Order",
+  "sourceURI" : "",
+  "properties" : {
+    "OrderID" : {
+      "sourcedFrom" : "OrderID"
+    },
+    "CustomerID" : {
+      "sourcedFrom" : "CustomerID"
+    },
+    "ShippedDate" : {
+      "sourcedFrom" : "ShippedDate"
+    },
+    "ShipAddress" : {
+      "sourcedFrom" : "ShipAddress"
+    }
+  }
+}

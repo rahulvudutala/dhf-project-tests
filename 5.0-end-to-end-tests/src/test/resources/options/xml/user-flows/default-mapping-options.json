@@ -1,0 +1,7 @@
+{  
+   "mapping":{  
+      "name":"OrderMapping1",
+      "version":2
+   },
+   "sourceDatabase": "data-hub-STAGING"
+}
