@@ -275,19 +275,19 @@ public class TestsHelper {
         }
     }
 
-    protected JsonNode getFinalOptions(String optionsFilePath, String flowPath, String stepNumber) {
+    protected JsonNode getFinalOptions(String optionsFilePath, String flowPath, int stepNumber) {
         JsonNode cmdLineOptions = getJsonResource(optionsFilePath);
         JsonNode flowOptions = getJsonResource(flowPath).get("options");
-        JsonNode stepOptions = getJsonResource(flowPath).get("steps").get(stepNumber).get("options");
+        JsonNode stepOptions = getJsonResource(flowPath).get("steps").get(Integer.toString(stepNumber)).get("options");
 
         JsonNode finalOptions = combineOptions(stepOptions, flowOptions);
         finalOptions = combineOptions(cmdLineOptions, finalOptions);
         return finalOptions;
     }
 
-    protected JsonNode getFinalOptions(String flowPath, String stepNumber) {
+    protected JsonNode getFinalOptions(String flowPath, int stepNumber) {
         JsonNode flowOptions = getJsonResource(flowPath).get("options");
-        JsonNode stepOptions = getJsonResource(flowPath).get("steps").get(stepNumber).get("options");
+        JsonNode stepOptions = getJsonResource(flowPath).get("steps").get(Integer.toString(stepNumber)).get("options");
         JsonNode finalOptions = combineOptions(stepOptions, flowOptions);
         return finalOptions;
     }
@@ -299,10 +299,10 @@ public class TestsHelper {
                 if (highRankOptions.get(keyNode).isObject()) {
                     combineOptions(highRankOptions.get(keyNode), lowRankOptions.get(keyNode));
                 } else {
-                    ((ObjectNode) lowRankOptions).put(keyNode, highRankOptions.get(keyNode).toString());
+                    ((ObjectNode) lowRankOptions).set(keyNode, highRankOptions.get(keyNode));
                 }
             } else {
-                ((ObjectNode) lowRankOptions).put(keyNode, highRankOptions.get(keyNode).toString());
+                ((ObjectNode) lowRankOptions).set(keyNode, highRankOptions.get(keyNode));
             }
         }
         return lowRankOptions;
