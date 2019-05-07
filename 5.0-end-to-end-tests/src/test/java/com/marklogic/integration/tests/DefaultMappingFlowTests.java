@@ -150,7 +150,7 @@ public class DefaultMappingFlowTests extends TestsHelper {
                     // verify the job count
                     int batchSize = getBatchSizeFromOptionsFile(optionsFilePathN);
                     int docsInStagingIngestColl = getDocCount("data-hub-STAGING", collection);
-                    double batches = Math.ceil((double) docsInStagingIngestColl / 100);
+                    double batches = Math.ceil((double) docsInStagingIngestColl / batchSize);
                     int finalBatches = (int) batches;
                     assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
                 }));

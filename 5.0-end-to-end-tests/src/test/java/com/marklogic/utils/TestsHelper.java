@@ -53,9 +53,11 @@ public class TestsHelper {
     private HubConfigImpl _adminHubConfig;
     private DataHubImpl _dataHub;
     private DataHubImpl _adminDataHub;
+    public GenericDocumentManager stagingDocMgr;
     public GenericDocumentManager finalDocMgr;
     private Properties props;
     protected String optionsPath = "src/test/resources/options";
+    protected String outputOrdersPath = "src/test/resources/output/orders";
 
     protected void initializeProject() {
         XMLUnit.setIgnoreWhitespace(true);
@@ -83,12 +85,9 @@ public class TestsHelper {
     }
 
     protected void e2eFlowCombos(FlowComboListener listener) {
-        DataFormat[] dataFormats = {DataFormat.JSON, DataFormat.XML};
         boolean[] cmdLineOptions = {true, false};
         for (boolean option : cmdLineOptions) {
-            for (DataFormat dataFormat : dataFormats) {
-                listener.onCombo(option, dataFormat.toString(), dataFormat.toString());
-            }
+            listener.onCombo(option);
         }
     }
 
@@ -347,7 +346,29 @@ public class TestsHelper {
         RunStepResponse stepJob = stepResponses.get(Integer.toString(stepId));
 
         JsonNode jsonNode = mapper.convertValue(stepJob, JsonNode.class);
-        return jsonNode.get(propertyName).toString();
+        return jsonNode.get(propertyName).asText();
+    }
+
+    protected JsonNode getPropertyFromArtifacts(String propertyName, String flowName, int stepNum) {
+        // TODO: Adding Step Definition Artifact logic here
+        JsonNode flowData = getJsonResource("flows" + "/" + flowName + ".flow.json");
+        JsonNode stepData = flowData.get("steps").get(Integer.toString(stepNum));
+        JsonNode flowPropertyVal = null;
+        JsonNode stepPropertyVal = null;
+        // check if flow artifact has property
+        if(flowData.get(propertyName) != null) {
+            flowPropertyVal = flowData.get(propertyName);
+        }
+
+        // check if step artifact has the property
+        if(stepData.get(propertyName) != null) {
+            stepPropertyVal = stepData.get(propertyName);
+        }
+
+        if(stepPropertyVal.isInt() && stepPropertyVal.intValue() == 0) {
+            stepPropertyVal = flowPropertyVal;
+        }
+        return stepPropertyVal;
     }
 
     protected void configureHubConfig() {
@@ -358,6 +379,7 @@ public class TestsHelper {
         _hubConfig.createProject(projectDir);
         _dataHub = ctx.getBean(DataHubImpl.class);
         _hubConfig.refreshProject();
+        stagingDocMgr = _hubConfig.newStagingClient().newDocumentManager();
         finalDocMgr = _hubConfig.newFinalClient().newDocumentManager();
     }
 
@@ -372,7 +394,18 @@ public class TestsHelper {
         _adminDataHub = ctx1.getBean(DataHubImpl.class);
         _adminHubConfig.refreshProject();
         _adminDataHub.wireClient();
+        stagingDocMgr = _hubConfig.newStagingClient().newDocumentManager();
         finalDocMgr = _adminHubConfig.newFinalClient().newDocumentManager();
+    }
+
+    public String prettyPrintJsonString(JsonNode jsonNode) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Object json = mapper.readValue(jsonNode.toString(), Object.class);
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+        } catch (Exception e) {
+            return "Sorry, pretty print didn't work";
+        }
     }
 
     protected void loadPropertiesFile() {

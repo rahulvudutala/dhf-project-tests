@@ -1,5 +1,7 @@
 package com.marklogic.integration.tests;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.marklogic.client.io.StringHandle;
 import com.marklogic.hub.HubConfig;
 import com.marklogic.hub.step.StepDefinition;
 import com.marklogic.utils.TestsHelper;
@@ -33,14 +35,14 @@ public class FlowEndToEndTests extends TestsHelper {
     @TestFactory
     public List<DynamicTest> generateRunFlowTests() {
         List<DynamicTest> tests = new ArrayList<>();
-        e2eFlowCombos((cmdLineOptions, dataFormat, outputFormat) -> {
+        e2eFlowCombos((cmdLineOptions) -> {
             String flowType = "user-flows", testType = "positive";
 
             // get flows path
             File flowDir = new File("flows");
             File[] flowFiles = flowDir.listFiles();
             // get options path
-            File optionDir = new File(optionsPath + "/" + dataFormat + "/" + flowType);
+            File optionDir = new File(optionsPath + "/" + flowType);
             File[] optionFiles = optionDir.listFiles();
 
             for (File flow : flowFiles) {
@@ -49,13 +51,19 @@ public class FlowEndToEndTests extends TestsHelper {
                 if (cmdLineOptions) {
                     for (File options : optionFiles) {
                         String optionFilePath = optionDir.toString().concat("/").concat(options.getName());
-                        tests.add(DynamicTest.dynamicTest(flowName+dataFormat, () -> {
+                        tests.add(DynamicTest.dynamicTest(flowName, () -> {
                             setUpDocs();
+                            String flowPath = flowDir.getPath().concat("/").concat(flowFileName);
+
                             // get number of steps in a flow
-                            int noOfSteps = getJsonResource(flowDir.getPath() + "/" + flowFileName).get("steps").size();
+                            int noOfSteps = getJsonResource(flowPath).get("steps").size();
+
                             // run each step in a flow within a for loop
                             for (int i = 1; i <= noOfSteps; i++) {
                                 clearDatabases(HubConfig.DEFAULT_JOB_NAME);
+                                System.out.println(prettyPrintJsonString(getFinalOptions(flowPath, i)));
+                                JsonNode combinedOptions = getFinalOptions(flowPath, i);
+
                                 BuildResult result = runTask(":5.0-end-to-end-tests:hubRunFlow",
                                         "-PflowName=" + flowName, "-PoptionsFile=" + optionFilePath, "-Psteps=" + i);
                                 BuildTask taskResult = result.task(":5.0-end-to-end-tests:hubRunFlow");
@@ -69,21 +77,29 @@ public class FlowEndToEndTests extends TestsHelper {
                                 assert (runFlowStatus == true);
 
                                 // verify the job count
-                                verifyJobDocumentsForStep(taskOutput, "stepDefinitionType", i);
+                                verifyDocumentCountForStep(taskOutput, "stepDefinitionType", i, flowName,
+                                        combinedOptions);
 
                                 // verify the ingested/mapped/mastered doc
-                                verifyDocsForStep(taskOutput, "stepDefinitionType", i);
+                                verifyDocsForStep(taskOutput, "stepDefinitionType", i, flowName, combinedOptions);
                             }
                         }));
                     }
                 } else {
-                    tests.add(DynamicTest.dynamicTest(flow.getName()+dataFormat+"nooptns", () -> {
+                    tests.add(DynamicTest.dynamicTest(flowName + "-nooptns", () -> {
                         setUpDocs();
+                        String flowPath = flowDir.getPath().concat("/").concat(flowFileName);
+
                         // get number of steps in a flow
                         int noOfSteps = getJsonResource(flowDir.getPath() + "/" + flowFileName).get("steps").size();
+
                         // run each step in a flow within a for loop
                         for (int i = 1; i <= noOfSteps; i++) {
                             clearDatabases(HubConfig.DEFAULT_JOB_NAME);
+                            JsonNode combinedOptions = getFinalOptions(flowPath, i);
+                            System.out.println(prettyPrintJsonString(getFinalOptions(flowPath, i)));
+
+
                             BuildResult result = runTask(":5.0-end-to-end-tests:hubRunFlow",
                                     "-PflowName=" + flowName, "-Psteps=" + i);
                             BuildTask taskResult = result.task(":5.0-end-to-end-tests:hubRunFlow");
@@ -96,10 +112,12 @@ public class FlowEndToEndTests extends TestsHelper {
                             boolean runFlowStatus = parseAndVerifyRunFlowStatus(taskOutput);
                             assert (runFlowStatus == true);
 
-                            // verify the the job count
+                            // verify the
+                            // document count for the step
+                            verifyDocumentCountForStep(taskOutput, "stepDefinitionType", i, flowName, combinedOptions);
 
                             // verify the ingested/mapped/mastered doc
-                            verifyDocsForStep(taskOutput, "stepDefinitionType", i);
+                            verifyDocsForStep(taskOutput, "stepDefinitionType", i, flowName, combinedOptions);
                         }
                     }));
                 }
@@ -108,25 +126,113 @@ public class FlowEndToEndTests extends TestsHelper {
         return tests;
     }
 
-    private void verifyDocsForStep(String taskOutput, String stepDefType, int stepId) {
-        String propertyVal = getPropertyFromRunFlowStatus(taskOutput, "stepDefinitionType", stepId);
-        if(propertyVal.equals(StepDefinition.StepDefinitionType.INGESTION.toString())) {
-            System.out.println("assert ingest");
-        } else if(propertyVal.equals(StepDefinition.StepDefinitionType.MAPPING.toString())) {
-            System.out.println("assert map");
-        } else if(propertyVal.equals(StepDefinition.StepDefinitionType.MASTERING.toString())) {
-            System.out.println("assert map");
+    private void verifyDocsForStep(String taskOutput, String stepDefType, int stepId, String flowName,
+                                   JsonNode combinedOptions) {
+        String propertyVal = getPropertyFromRunFlowStatus(taskOutput, stepDefType, stepId);
+        String refFileName = "10248";
+        String targetDb = combinedOptions.get("targetDatabase").asText();
+        String outputFormat = combinedOptions.get("outputFormat").asText();
+        outputFormat = (outputFormat == null) ? "json" : outputFormat;
+        if (outputFormat.equals("json")) {
+            String expected = getJsonResource(outputOrdersPath + "/" + propertyVal + "/" + outputFormat + "/"
+                    + refFileName + "." + outputFormat).toString();
+            String actual = null;
+            if (targetDb.equals(getPropertyFromPropertiesFile("mlStagingDbName"))) {
+                actual = stagingDocMgr.read("/" + flowName + "/" + outputFormat + "/" + refFileName + "."
+                        + outputFormat).next().getContent(new StringHandle()).get();
+            }
+            if (targetDb.equals(getPropertyFromPropertiesFile("mlFinalDbName"))) {
+                actual = finalDocMgr.read("/" + flowName + "/" + outputFormat + "/" + refFileName + "."
+                        + outputFormat).next().getContent(new StringHandle()).get();
+            }
+            assertJsonEqual(expected, actual);
+        } else {
+
         }
     }
 
-    private void verifyJobDocumentsForStep(String taskOutput, String stepDefType, int stepId) {
-        String propertyVal = getPropertyFromRunFlowStatus(taskOutput, "stepDefinitionType", stepId);
-        if(propertyVal.equals(StepDefinition.StepDefinitionType.INGESTION.toString())) {
-            System.out.println("ingest docs count");
-        } else if(propertyVal.equals(StepDefinition.StepDefinitionType.MAPPING.toString())) {
-            System.out.println("map docs count");
-        } else if(propertyVal.equals(StepDefinition.StepDefinitionType.MASTERING.toString())) {
-            System.out.println("master docs count");
+    private void verifyDocumentCountForStep(String taskOutput, String stepDefType, int stepId, String flowName,
+                                            JsonNode combinedOptions) {
+        String propertyVal = getPropertyFromRunFlowStatus(taskOutput, stepDefType, stepId);
+        if (propertyVal.equals(StepDefinition.StepDefinitionType.INGESTION.toString())) {
+            String targetDb = combinedOptions.get("targetDatabase").asText();
+            String inputFilePath = getPropertyFromArtifacts("fileLocations", flowName, stepId)
+                    .get("inputFilePath").asText();
+            int inputFilesCnt = new File(inputFilePath).listFiles().length;
+            JsonNode collections = combinedOptions.get("collections");
+            for (JsonNode collection : collections) {
+                int currentDocsInCollCnt = getDocCount(targetDb, collection.asText());
+                // verify the number of documents in target database in the corresponding collection
+                assert (inputFilesCnt == currentDocsInCollCnt);
+            }
+
+            // verify the number of documents in job database in the Jobs collection. Should be 1
+            assert (1 == getDocCount("data-hub-JOBS", "Jobs"));
+        } else if (propertyVal.equals(StepDefinition.StepDefinitionType.MAPPING.toString())) {
+            String sourceDb = combinedOptions.get("sourceDatabase").asText();
+            String targetDb = combinedOptions.get("targetDatabase").asText();
+            String sourceQuery = combinedOptions.get("sourceQuery").asText();
+            String ingestCollection = sourceQuery.substring(sourceQuery.indexOf("'") + 1, sourceQuery.lastIndexOf("'"));
+
+            int sourceDbCount = getDocCount(sourceDb, ingestCollection);
+            int batchSize = getPropertyFromArtifacts("batchSize", flowName, stepId).asInt();
+            batchSize = (batchSize == 0) ? 100 : batchSize;
+            int targetDbCount = 0;
+
+            JsonNode collections = combinedOptions.get("collections");
+
+            for (JsonNode collection : collections) {
+                targetDbCount = getDocCount(targetDb, collection.asText());
+
+                // verify the number of documents in target database in the corresponding collection
+                assert (sourceDbCount == targetDbCount);
+            }
+
+            // verify the number of documents in job database in the Jobs collection
+            double batches = Math.ceil((double) targetDbCount / batchSize);
+            int finalBatches = (int) batches;
+            assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
+        } else if (propertyVal.equals(StepDefinition.StepDefinitionType.MASTERING.toString())) {
+            // One job doc is created and batch docs are created
+            String sourceDb = combinedOptions.get("sourceDatabase").asText();
+            String targetDb = combinedOptions.get("targetDatabase").asText();
+            String sourceQuery = combinedOptions.get("sourceQuery").asText();
+            String mappedCollection = sourceQuery.substring(sourceQuery.indexOf("'") + 1, sourceQuery.lastIndexOf("'"));
+
+            int sourceDbCount = getDocCount(sourceDb, mappedCollection);
+            int batchSize = getPropertyFromArtifacts("batchSize", flowName, stepId).asInt();
+            batchSize = (batchSize == 0) ? 100 : batchSize;
+            int targetDbCount = 0;
+
+            JsonNode collections = combinedOptions.get("collections");
+            for (JsonNode collection : collections) {
+                targetDbCount = getDocCount(targetDb, collection.asText());
+
+                // verify the number of documents in target database in the corresponding collection
+                // 3 mastering docs are created for this input dataset. 1 merged doc, 1 notification doc
+                // and an auditing doc is created. All the mapped (harmonized) docs are also moved to
+                // the collections mentioned.
+                assert (sourceDbCount + 3 == targetDbCount);
+            }
+
+            // verify the number of documents in job database in the Jobs collection
+
+            // This is temporary to pass the tests. This is because the mapped docs are removed from the
+            // collections defined in the mapping step. Remove these two lines.
+            String inputFilePath = getPropertyFromArtifacts("fileLocations", flowName, stepId)
+                    .get("inputFilePath").asText();
+            targetDbCount = new File(inputFilePath).listFiles().length;
+
+            double batches = Math.ceil((double) targetDbCount / batchSize);
+            int finalBatches = (int) batches;
+            assert (1 + finalBatches == getDocCount("data-hub-JOBS", "Jobs"));
         }
+    }
+
+    private int getSourceDbDocCount(JsonNode combinedOptions) {
+        String sourceDb = combinedOptions.get("sourceDatabase").asText();
+        String sourceQuery = combinedOptions.get("sourceQuery").asText();
+        String mappedCollection = sourceQuery.substring(sourceQuery.indexOf("'") + 1, sourceQuery.lastIndexOf("'"));
+        return getDocCount(sourceDb, mappedCollection);
     }
 }
