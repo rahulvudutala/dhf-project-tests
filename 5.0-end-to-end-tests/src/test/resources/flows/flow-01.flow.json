@@ -26,9 +26,9 @@
       "batchSize": 100,
       "threadCount": 4,
       "fileLocations": {
-        "inputFilePath": "input/orders/simple-docs",
+        "inputFilePath": "input/orders/simple-docs/json",
         "inputFileType": "json",
-        "outputURIReplacement": ".*input*.,'/flow-01/json/'"
+        "outputURIReplacement": ".*input/orders/simple-docs/json*.,'/flow-01/json/'"
       }
     },
     "2": {
@@ -42,7 +42,7 @@
         "mapping": {
           "name": "OrderMapping1",
           "version": 1
-      	},
+        },
         "collections": [
           "flow-01-mapping-json"
         ],
@@ -73,9 +73,9 @@
       "batchSize": 100,
       "threadCount": 4,
       "fileLocations": {
-        "inputFilePath": "input/orders/simple-docs",
+        "inputFilePath": "input/orders/simple-docs/xml",
         "inputFileType": "xml",
-        "outputURIReplacement": ".*input*.,'/flow-01/xml/'"
+        "outputURIReplacement": ".*input/orders/simple-docs/xml*.,'/flow-01/xml/'"
       }
     },
     "4": {

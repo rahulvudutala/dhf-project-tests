@@ -19,9 +19,6 @@ plugins {
 
 apply plugin: "com.marklogic.ml-data-hub"
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
 bootJar.enabled = false
 jar.enabled = true
 
@@ -80,6 +77,7 @@ test {
         showStandardStreams = true
     }
     include 'com/marklogic/integration/tests/DefaultMappingFlowTests.class'
+    include 'com/marklogic/integration/tests/FlowEndToEndTests.class'
 }
 
 task unDeployDHF (type: Exec) {
