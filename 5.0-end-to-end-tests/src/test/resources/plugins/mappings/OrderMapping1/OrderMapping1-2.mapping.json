@@ -4,12 +4,9 @@
   "description" : "Default description",
   "version" : 2,
   "targetEntityType" : "http://example.org/Order-0.0.1/Order",
-  "sourceContext" : "//",
+  "sourceContext" : "/",
   "sourceURI" : "",
   "properties" : {
-    "OrderID" : {
-      "sourcedFrom" : "OrderID"
-    },
     "CustomerID" : {
       "sourcedFrom" : "CustomerID"
     },

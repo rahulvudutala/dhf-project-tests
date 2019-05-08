@@ -41,7 +41,7 @@
         "sourceDatabase": "data-hub-STAGING",
         "mapping": {
           "name": "OrderMapping1",
-          "version": 1
+          "version": 2
         },
         "collections": [
           "flow-01-mapping-json"
