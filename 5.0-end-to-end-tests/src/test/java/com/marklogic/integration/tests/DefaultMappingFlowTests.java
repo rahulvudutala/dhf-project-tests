@@ -53,7 +53,7 @@ public class DefaultMappingFlowTests extends TestsHelper {
     }
 
     @TestFactory
-    public List<DynamicTest> generateRunFlowTests() {
+    public List<DynamicTest> generateDefaultMappingFlowTests() {
         List<DynamicTest> tests = new ArrayList<>();
 
         // default-mapping flows

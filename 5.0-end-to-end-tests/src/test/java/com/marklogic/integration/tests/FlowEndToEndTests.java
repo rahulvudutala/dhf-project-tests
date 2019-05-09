@@ -51,21 +51,20 @@ public class FlowEndToEndTests extends TestsHelper {
                 if (cmdLineOptions) {
                     for (File options : optionFiles) {
                         String optionFilePath = optionDir.toString().concat("/").concat(options.getName());
-                        tests.add(DynamicTest.dynamicTest(flowName, () -> {
-                            setUpDocs();
-                            String flowPath = flowDir.getPath().concat("/").concat(flowFileName);
-
-                            // get number of steps in a flow
-                            int noOfSteps = getJsonResource(flowPath).get("steps").size();
-
-                            // run each step in a flow within a for loop
-                            for (int i = 1; i <= noOfSteps; i++) {
+                        String flowPath = flowDir.getPath().concat("/").concat(flowFileName);
+                        // get number of steps in a flow
+                        int noOfSteps = getJsonResource(flowPath).get("steps").size();
+                        for (int i = 1; i <= noOfSteps; i++) {
+                            int stepNum = i;
+                            tests.add(DynamicTest.dynamicTest(flowName + "-step: " + stepNum, () -> {
+                                setUpDocs();
+                                // run each step in a flow within a for loop
                                 clearDatabases(HubConfig.DEFAULT_JOB_NAME);
-                                System.out.println(prettyPrintJsonString(getFinalOptions(optionFilePath, flowPath, i)));
-                                JsonNode combinedOptions = getFinalOptions(optionFilePath, flowPath, i);
+                                System.out.println(prettyPrintJsonString(getFinalOptions(optionFilePath, flowPath, stepNum)));
+                                JsonNode combinedOptions = getFinalOptions(optionFilePath, flowPath, stepNum);
 
                                 BuildResult result = runTask(":5.0-end-to-end-tests:hubRunFlow",
-                                        "-PflowName=" + flowName, "-PoptionsFile=" + optionFilePath, "-Psteps=" + i);
+                                        "-PflowName=" + flowName, "-PoptionsFile=" + optionFilePath, "-Psteps=" + stepNum);
                                 BuildTask taskResult = result.task(":5.0-end-to-end-tests:hubRunFlow");
 
                                 // verify the taskoutcome to be true
@@ -77,31 +76,31 @@ public class FlowEndToEndTests extends TestsHelper {
                                 assert (runFlowStatus == true);
 
                                 // verify the job count
-                                verifyDocumentCountForStep(taskOutput, "stepDefinitionType", i, flowName,
+                                verifyDocumentCountForStep(taskOutput, "stepDefinitionType", stepNum, flowName,
                                         combinedOptions);
 
                                 // verify the ingested/mapped/mastered doc
-                                verifyDocsForStep(taskOutput, "stepDefinitionType", i, flowName, combinedOptions);
-                            }
-                        }));
+                                verifyDocsForStep(taskOutput, "stepDefinitionType", stepNum, flowName, combinedOptions);
+                            }));
+                        }
                     }
                 } else {
-                    tests.add(DynamicTest.dynamicTest(flowName + "-nooptns", () -> {
-                        setUpDocs();
-                        String flowPath = flowDir.getPath().concat("/").concat(flowFileName);
+                    String flowPath = flowDir.getPath().concat("/").concat(flowFileName);
+                    // get number of steps in a flow
+                    int noOfSteps = getJsonResource(flowDir.getPath() + "/" + flowFileName).get("steps").size();
+                    for (int i = 1; i <= noOfSteps; i++) {
+                        int stepNum = i;
+                        tests.add(DynamicTest.dynamicTest(flowName + "-step: " + stepNum + "-nooptns", () -> {
+                            setUpDocs();
+                            // run each step in a flow within a for loop
 
-                        // get number of steps in a flow
-                        int noOfSteps = getJsonResource(flowDir.getPath() + "/" + flowFileName).get("steps").size();
-
-                        // run each step in a flow within a for loop
-                        for (int i = 1; i <= noOfSteps; i++) {
                             clearDatabases(HubConfig.DEFAULT_JOB_NAME);
-                            JsonNode combinedOptions = getFinalOptions(flowPath, i);
-                            System.out.println(prettyPrintJsonString(getFinalOptions(flowPath, i)));
+                            JsonNode combinedOptions = getFinalOptions(flowPath, stepNum);
+                            System.out.println(prettyPrintJsonString(getFinalOptions(flowPath, stepNum)));
 
 
                             BuildResult result = runTask(":5.0-end-to-end-tests:hubRunFlow",
-                                    "-PflowName=" + flowName, "-Psteps=" + i);
+                                    "-PflowName=" + flowName, "-Psteps=" + stepNum);
                             BuildTask taskResult = result.task(":5.0-end-to-end-tests:hubRunFlow");
 
                             // verify the taskoutcome to be true
@@ -114,12 +113,12 @@ public class FlowEndToEndTests extends TestsHelper {
 
                             // verify the
                             // document count for the step
-                            verifyDocumentCountForStep(taskOutput, "stepDefinitionType", i, flowName, combinedOptions);
+                            verifyDocumentCountForStep(taskOutput, "stepDefinitionType", stepNum, flowName, combinedOptions);
 
                             // verify the ingested/mapped/mastered doc
-                            verifyDocsForStep(taskOutput, "stepDefinitionType", i, flowName, combinedOptions);
-                        }
-                    }));
+                            verifyDocsForStep(taskOutput, "stepDefinitionType", stepNum, flowName, combinedOptions);
+                        }));
+                    }
                 }
             }
         });
@@ -133,7 +132,7 @@ public class FlowEndToEndTests extends TestsHelper {
         String targetDb = combinedOptions.get("targetDatabase").asText();
         JsonNode notFileLocation = getPropertyFromArtifacts("fileLocations", flowName, stepId);
         String inputFileType = "";
-        if(notFileLocation != null) {
+        if (notFileLocation != null) {
             inputFileType = getPropertyFromArtifacts("fileLocations", flowName, stepId)
                     .get("inputFileType").asText();
         }
@@ -144,7 +143,6 @@ public class FlowEndToEndTests extends TestsHelper {
                     + refFileName + "." + outputFormat).toString();
             String actual = null;
             if (targetDb.equals(getPropertyFromPropertiesFile("mlStagingDbName"))) {
-                System.out.println(flowName + "/" + outputFormat + "/" + refFileName + "." + outputFormat);
                 actual = stagingDocMgr.read("/" + flowName + "/" + outputFormat + "/" + refFileName + "."
                         + outputFormat).next().getContent(new StringHandle()).get();
             }
@@ -155,7 +153,7 @@ public class FlowEndToEndTests extends TestsHelper {
             assertJsonEqual(expected, actual);
         }
 
-        if(inputFileType.equals("xml") && outputFormat.equals("xml")) {
+        if (inputFileType.equals("xml") && outputFormat.equals("xml")) {
 
         }
     }
@@ -172,9 +170,9 @@ public class FlowEndToEndTests extends TestsHelper {
             int inputFilesCnt = new File(inputFilePath).listFiles().length;
             JsonNode collections = combinedOptions.get("collections");
 
-            if(inputFileType.equals("csv")) {
+            if (inputFileType.equals("csv")) {
                 try {
-                    File file = new File(inputFilePath+"/superstore.csv");
+                    File file = new File(inputFilePath + "/superstore.csv");
                     LineNumberReader lineNumberReader = new LineNumberReader(new FileReader(file));
                     lineNumberReader.skip(Long.MAX_VALUE);
                     inputFilesCnt = lineNumberReader.getLineNumber();
@@ -189,8 +187,6 @@ public class FlowEndToEndTests extends TestsHelper {
             for (JsonNode collection : collections) {
                 int currentDocsInCollCnt = getDocCount(targetDb, collection.asText());
                 // verify the number of documents in target database in the corresponding collection
-                System.out.println("inputFilesCnt: " + inputFilesCnt);
-                System.out.println("currentDocsInCollCnt: " + currentDocsInCollCnt);
                 assert (inputFilesCnt == currentDocsInCollCnt);
             }
 
