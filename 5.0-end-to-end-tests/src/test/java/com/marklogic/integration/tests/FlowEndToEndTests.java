@@ -12,7 +12,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInstance;
 
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,8 +61,8 @@ public class FlowEndToEndTests extends TestsHelper {
                             // run each step in a flow within a for loop
                             for (int i = 1; i <= noOfSteps; i++) {
                                 clearDatabases(HubConfig.DEFAULT_JOB_NAME);
-                                System.out.println(prettyPrintJsonString(getFinalOptions(flowPath, i)));
-                                JsonNode combinedOptions = getFinalOptions(flowPath, i);
+                                System.out.println(prettyPrintJsonString(getFinalOptions(optionFilePath, flowPath, i)));
+                                JsonNode combinedOptions = getFinalOptions(optionFilePath, flowPath, i);
 
                                 BuildResult result = runTask(":5.0-end-to-end-tests:hubRunFlow",
                                         "-PflowName=" + flowName, "-PoptionsFile=" + optionFilePath, "-Psteps=" + i);
@@ -131,13 +131,20 @@ public class FlowEndToEndTests extends TestsHelper {
         String propertyVal = getPropertyFromRunFlowStatus(taskOutput, stepDefType, stepId);
         String refFileName = "10248";
         String targetDb = combinedOptions.get("targetDatabase").asText();
+        JsonNode notFileLocation = getPropertyFromArtifacts("fileLocations", flowName, stepId);
+        String inputFileType = "";
+        if(notFileLocation != null) {
+            inputFileType = getPropertyFromArtifacts("fileLocations", flowName, stepId)
+                    .get("inputFileType").asText();
+        }
         String outputFormat = combinedOptions.get("outputFormat").asText();
         outputFormat = (outputFormat == null) ? "json" : outputFormat;
-        if (outputFormat.equals("json")) {
+        if (inputFileType.equals("json") && outputFormat.equals("json")) {
             String expected = getJsonResource(outputOrdersPath + "/" + propertyVal + "/" + outputFormat + "/"
                     + refFileName + "." + outputFormat).toString();
             String actual = null;
             if (targetDb.equals(getPropertyFromPropertiesFile("mlStagingDbName"))) {
+                System.out.println(flowName + "/" + outputFormat + "/" + refFileName + "." + outputFormat);
                 actual = stagingDocMgr.read("/" + flowName + "/" + outputFormat + "/" + refFileName + "."
                         + outputFormat).next().getContent(new StringHandle()).get();
             }
@@ -146,7 +153,9 @@ public class FlowEndToEndTests extends TestsHelper {
                         + outputFormat).next().getContent(new StringHandle()).get();
             }
             assertJsonEqual(expected, actual);
-        } else {
+        }
+
+        if(inputFileType.equals("xml") && outputFormat.equals("xml")) {
 
         }
     }
@@ -158,11 +167,30 @@ public class FlowEndToEndTests extends TestsHelper {
             String targetDb = combinedOptions.get("targetDatabase").asText();
             String inputFilePath = getPropertyFromArtifacts("fileLocations", flowName, stepId)
                     .get("inputFilePath").asText();
+            String inputFileType = getPropertyFromArtifacts("fileLocations", flowName, stepId)
+                    .get("inputFileType").asText();
             int inputFilesCnt = new File(inputFilePath).listFiles().length;
             JsonNode collections = combinedOptions.get("collections");
+
+            if(inputFileType.equals("csv")) {
+                try {
+                    File file = new File(inputFilePath+"/superstore.csv");
+                    LineNumberReader lineNumberReader = new LineNumberReader(new FileReader(file));
+                    lineNumberReader.skip(Long.MAX_VALUE);
+                    inputFilesCnt = lineNumberReader.getLineNumber();
+                    lineNumberReader.close();
+                } catch (FileNotFoundException fnfe) {
+                    fnfe.printStackTrace();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+
             for (JsonNode collection : collections) {
                 int currentDocsInCollCnt = getDocCount(targetDb, collection.asText());
                 // verify the number of documents in target database in the corresponding collection
+                System.out.println("inputFilesCnt: " + inputFilesCnt);
+                System.out.println("currentDocsInCollCnt: " + currentDocsInCollCnt);
                 assert (inputFilesCnt == currentDocsInCollCnt);
             }
 

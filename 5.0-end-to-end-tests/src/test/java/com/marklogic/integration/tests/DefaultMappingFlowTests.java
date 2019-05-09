@@ -3,10 +3,7 @@ package com.marklogic.integration.tests;
 import com.marklogic.client.io.DOMHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.hub.HubConfig;
-import com.marklogic.hub.flow.RunFlowResponse;
-import com.marklogic.hub.step.RunStepResponse;
 import com.marklogic.utils.TestsHelper;
-import org.gradle.internal.impldep.com.google.gson.Gson;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,7 +15,6 @@ import org.w3c.dom.Document;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;

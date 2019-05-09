@@ -298,7 +298,9 @@ public class TestsHelper {
                 if (highRankOptions.get(keyNode).isObject()) {
                     combineOptions(highRankOptions.get(keyNode), lowRankOptions.get(keyNode));
                 } else {
-                    ((ObjectNode) lowRankOptions).set(keyNode, highRankOptions.get(keyNode));
+                    if(highRankOptions.get(keyNode) != null) {
+                        ((ObjectNode) lowRankOptions).set(keyNode, highRankOptions.get(keyNode));
+                    }
                 }
             } else {
                 ((ObjectNode) lowRankOptions).set(keyNode, highRankOptions.get(keyNode));
@@ -365,7 +367,7 @@ public class TestsHelper {
             stepPropertyVal = stepData.get(propertyName);
         }
 
-        if(stepPropertyVal.isInt() && stepPropertyVal.intValue() == 0) {
+        if(stepPropertyVal !=  null && stepPropertyVal.isInt() && stepPropertyVal.intValue() == 0) {
             stepPropertyVal = flowPropertyVal;
         }
         return stepPropertyVal;
