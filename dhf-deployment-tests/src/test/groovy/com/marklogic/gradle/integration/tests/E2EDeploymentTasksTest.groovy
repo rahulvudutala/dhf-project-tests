@@ -17,6 +17,8 @@
 
 package com.marklogic.gradle.integration.tests
 
+import spock.lang.Ignore
+
 import static org.gradle.testkit.runner.TaskOutcome.FAILED
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
@@ -72,7 +74,7 @@ class E2EDeploymentTasksTest extends BaseTest {
     @Shared File mlProtectedPathDir = Paths.get(mlConfigDir.toString(), "security", "protected-paths").toFile()
     @Shared File mlQueryRoleSetDir = Paths.get(mlConfigDir.toString(), "security", "query-rolesets").toFile()
 
-    @Shared File entitiesDir = Paths.get(projectDir.toString(), "plugins", "entities").toFile()
+    @Shared File entitiesDir = Paths.get(projectDir.toString(), "entities").toFile()
     @Shared File entityConfigDir = Paths.get(projectDir.toString(), HubConfig.ENTITY_CONFIG_DIR).toFile()
 
     @Shared File mlTriggersDir = Paths.get(projectDir.toString(), HubConfig.USER_CONFIG_DIR, "triggers").toFile()
@@ -448,8 +450,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -476,8 +478,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -503,8 +505,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-templates"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -530,8 +532,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/certificate-templates"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -558,8 +560,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/protected-paths"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -585,8 +587,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/query-rolesets"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -637,8 +639,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/certificate-templates"))
         int ctCount = rf.getResourceCount()
 
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -693,12 +695,12 @@ class E2EDeploymentTasksTest extends BaseTest {
         api = new API(getManageClient())
         clearDatabases(getPropertyFromPropertiesFile("mlStagingDbName"), getPropertyFromPropertiesFile("mlFinalDbName"))
 
-        File testEntityDir = Paths.get(entitiesDir.toString(), "test").toFile()
+        File entityDir = Paths.get(entitiesDir.toString()).toFile()
         File useModDepFile = Paths.get(tmpDir.toString(), "local-user-modules-deploy-timestamps.properties").toFile()
-        if(!testEntityDir.isDirectory()) {
-            testEntityDir.mkdirs()
+        if(!entityDir.isDirectory()) {
+            entityDir.mkdirs()
         }
-        File testEntityConfig = Paths.get(testEntityDir.toString(), "test.entity.json").toFile()
+        File testEntityConfig = Paths.get(entityDir.toString(), "test.entity.json").toFile()
         File stagingEntityConfig = Paths.get(entityConfigDir.toString(), "staging-entity-options.xml").toFile()
         File finalEntityConfig = Paths.get(entityConfigDir.toString(), "final-entity-options.xml").toFile()
         copyResourceToFile("plugin/test.entity.json", testEntityConfig)
@@ -754,10 +756,11 @@ class E2EDeploymentTasksTest extends BaseTest {
 
         assert(getModulesDocCount("hub-core-module") == hubCoreModCount)
         // there will be 4 default docs also installed and ext/lib/sample-lib.xqy,
-        // along with 109 hub-core-modules and 2 entity-options files. So adding 7 to verify
+        // along with 218 hub-core-modules and 2 entity-options files. So adding 7 to verify
         assert(getModulesDocCount() == hubCoreModCount + 7)
-        assert(getStagingDocCount() == 1)
-        assert(getFinalDocCount() == 1)
+        // There are 7 docs out of the box and 1 entity file coming from other test
+        assert(getStagingDocCount() == 8)
+        assert(getFinalDocCount() == 8)
 
     }
 
@@ -780,8 +783,9 @@ class E2EDeploymentTasksTest extends BaseTest {
         // there will be 4 default docs also installed and ext/lib/sample-lib.xqy,
         // along with 109 hub-core-modules and 2 entity-options files. So adding 7 to verify
         assert(getModulesDocCount() == hubCoreModCount + 7)
-        assert(getStagingDocCount() == 1)
-        assert(getFinalDocCount() == 1)
+        // There are 7 docs out of the box and 1 entity file coming from other test
+        assert(getStagingDocCount() == 8)
+        assert(getFinalDocCount() == 8)
     }
 
     def "deploy modules from multiple mlModulePaths" () {
@@ -818,7 +822,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildFailure)
         result.task(':dhf-deployment-tests:mlDeployUsers').outcome == SUCCESS
         assert (secUser.userName.equals(getPropertyFromPropertiesFile("mlSecConfUsername")))
-        assert (secUser.role.contains(getPropertyFromPropertiesFile("mlHubUserRole")))
+        assert (secUser.role.contains(getPropertyFromPropertiesFile("mlFlowDeveloperRole")))
     }
 
     def "test deploy triggers from hub-internal-config directory" () {
@@ -836,8 +840,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildFailure)
         result.task(':dhf-deployment-tests:mlDeployTriggers').outcome == SUCCESS
         // There are already 3 docs in the triggers database
-//        assert (size == 4)
-        assert (size == 1)
+        assert (size == 4)
     }
 
     def "test deploy triggers from ml-config directory" () {
@@ -854,8 +857,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':dhf-deployment-tests:mlDeployTriggers').outcome == SUCCESS
-//        assert (size == 5)
-        assert (size == 2)
+        assert (size == 5)
     }
 
     def "test deploy triggers from custom ml-config/databases/(name of triggers database)/triggers directory" () {
@@ -877,8 +879,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':dhf-deployment-tests:mlDeployTriggers').outcome == SUCCESS
-//        assert (size == 6)
-        assert (size == 3)
+        assert (size == 6)
     }
 
     def "test deploy schemas from ml-schemas" () {
@@ -897,10 +898,10 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':dhf-deployment-tests:mlLoadSchemas').outcome == SUCCESS
-//        assert (docCount == 5)
-        assert (docCount == 1)
+        assert (docCount == 5)
     }
 
+    @Ignore
     def "test deploy schemas from src/main/hub-internal-config/schemas" () {
         given:
         File hubSchemasConfig = Paths.get(hubSchemasDir.toString(), "ml-sch.xsd").toFile()
@@ -939,8 +940,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':dhf-deployment-tests:mlReloadSchemas').outcome == SUCCESS
-//        assert (docCount == 5)
-        assert (docCount == 1)
+        assert (docCount == 5)
         // To verify bug DHFPROD-1675 (mlReloadSchemas deleting files from mlFinalDb).
         assert (finalDbDocCount == getFinalDocCount())
     }

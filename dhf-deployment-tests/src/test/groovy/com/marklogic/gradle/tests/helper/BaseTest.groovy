@@ -84,7 +84,7 @@ class BaseTest extends Specification {
     static private DataHubImpl _datahub
     static private DataHubImpl _admindatahub
 
-    static final int hubCoreModCount = 111
+    static final int hubCoreModCount = 218
     static final protected Logger logger = LoggerFactory.getLogger(BaseTest.class)
     static String environmentName
 
