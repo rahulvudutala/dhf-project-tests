@@ -1,6 +1,7 @@
 package com.marklogic.integration.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.marklogic.client.io.DOMHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.hub.HubConfig;
 import com.marklogic.hub.step.StepDefinition;
@@ -11,10 +12,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInstance;
+import org.w3c.dom.Document;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class FlowEndToEndTests extends TestsHelper {
@@ -154,7 +158,18 @@ public class FlowEndToEndTests extends TestsHelper {
         }
 
         if (inputFileType.equals("xml") && outputFormat.equals("xml")) {
-
+            Document expected = getXmlResource(outputOrdersPath + "/" + propertyVal + "/" + outputFormat + "/"
+                    + refFileName + "." + outputFormat);
+            Document actual = null;
+            if (targetDb.equals(getPropertyFromPropertiesFile("mlStagingDbName"))) {
+                actual = stagingDocMgr.read("/" + flowName + "/" + outputFormat + "/" + refFileName + "."
+                        + outputFormat).next().getContent(new DOMHandle()).get();
+            }
+            if (targetDb.equals(getPropertyFromPropertiesFile("mlFinalDbName"))) {
+                actual = finalDocMgr.read("/" + flowName + "/" + outputFormat + "/" + refFileName + "."
+                        + outputFormat).next().getContent(new DOMHandle()).get();
+            }
+            assertXMLEqual(expected, actual);
         }
     }
 
