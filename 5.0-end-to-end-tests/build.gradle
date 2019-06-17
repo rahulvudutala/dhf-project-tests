@@ -45,7 +45,7 @@ dependencies {
     compile ('com.marklogic:marklogic-data-hub:5.0-SNAPSHOT') {
         exclude group: 'ch.qos.logback'
     }
-    compile ('com.marklogic:ml-gradle:3.12.0') {
+    compile ('com.marklogic:ml-gradle:3.15.0') {
         exclude group: 'ch.qos.logback'
     }
     compile 'org.jdom:jdom2:2.0.6'
@@ -99,8 +99,8 @@ task importData(type: com.marklogic.gradle.task.MlcpTask) {
     mode = "local"
     host = mlHost
     port = 8010
-    username = "admin"
-    password = "admin"
+    username = "flow-operator"
+    password = "flow-operator"
     restrict_hosts = true
 }
 
@@ -119,8 +119,8 @@ task importDataAsXML(type: com.marklogic.gradle.task.MlcpTask) {
     mode = "local"
     host = mlHost
     port = 8010
-    username = "admin"
-    password = "admin"
+    username = "flow-operator"
+    password = "flow-operator"
     restrict_hosts = true
 }
 

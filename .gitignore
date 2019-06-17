@@ -4,10 +4,6 @@
 .metadata/
 .idea/
 .gradletasknamecache
-npm-debug.log
-marklogic-data-hub/bin/
-marklogic-data-hub/src/main/resources/ml-modules/root/trace-ui
-quick-start/bin/
 build/
 out/
 releases/
@@ -16,10 +12,7 @@ releases/
 gradle-local.properties
 environment.properties
 assetInstallTime.properties
-/quick-start/input
-/quick-start/plugins
 flow.properties
-node_modules/
 .tmp/
 *.sublime-*
 .vscode/
@@ -34,6 +27,8 @@ ye-olde-project
 .bitmap
 bit.json
 
+java_pid11496.hprof
+
 # ignoring ml-datahub-tests files
 ml-datahub-tests/bin
 ml-datahub-tests/build
@@ -41,6 +36,14 @@ ml-datahub-tests/build
 # ignoring dhf-deployment-tests files
 dhf-deployment-tests/bin
 dhf-deployment-tests/build
+
+# ignoring 5.0-end-to-end-tests files
+5.0-end-to-end-tests/bin
+5.0-end-to-end-tests/build
+5.0-end-to-end-tests/src/main/*
+5.0-end-to-end-tests/entities/
+5.0-end-to-end-tests/flows/
+5.0-end-to-end-tests/mappings/
 
 # ignoring qs-datahub-codegen-api files
 qs-datahub-codegen-api/bin
