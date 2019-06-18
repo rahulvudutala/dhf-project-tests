@@ -48,7 +48,7 @@ public class TestsHelper {
 
     private static Logger logger = LoggerFactory.getLogger(TestsHelper.class);
 
-    String projectDir = new File("").getAbsolutePath();
+    public String projectDir = new File("").getAbsolutePath();
     private HubConfigImpl _hubConfig;
     private HubConfigImpl _adminHubConfig;
     private DataHubImpl _dataHub;
@@ -137,12 +137,31 @@ public class TestsHelper {
         try {
             FileUtils.copyDirectory(new File(Paths.get(projectDir, "src/test/resources/plugins/").toString()),
                     new File(Paths.get(projectDir).toString()));
-            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/flows").toString()),
-                    new File(Paths.get(projectDir,"flows").toString()));
+            FileUtils.copyDirectory(new File(Paths.get(projectDir, "src/test/resources/flows").toString()),
+                    new File(Paths.get(projectDir, "flows").toString()));
 //            FileUtils.copyDirectory(new File(Paths.get(projectDir,"src/test/resources/steps").toString()),
 //                    new File(Paths.get(projectDir,"steps").toString()));
         } catch (IOException ie) {
             ie.printStackTrace();
+        }
+    }
+
+    protected void createTemporalConfig() {
+        try {
+            FileUtils.copyDirectory(new File(Paths.get(projectDir, "src/test/resources/temporal-config/temporal").toString()),
+                    new File(Paths.get(projectDir, "src", "main", "ml-config", "databases", "data-hub-STAGING",
+                            "temporal").toString()));
+            FileUtils.copyDirectory(new File(Paths.get(projectDir, "src/test/resources/temporal-config/temporal").toString()),
+                    new File(Paths.get(projectDir, "src", "main", "ml-config", "databases", "temporal").toString()));
+
+            FileUtils.copyFile(new File(Paths.get(projectDir, "src/test/resources/temporal-config/databases" +
+                            "/staging-database.json").toString()),
+                    new File(Paths.get(projectDir, "src/main/hub-internal-config/databases/staging-database.json").toString()));
+            FileUtils.copyFile(new File(Paths.get(projectDir, "src/test/resources/temporal-config/databases" +
+                            "/final-database.json").toString()),
+                    new File(Paths.get(projectDir, "src/main/ml-config/databases/final-database.json").toString()));
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
     }
 
@@ -298,7 +317,7 @@ public class TestsHelper {
                 if (highRankOptions.get(keyNode).isObject()) {
                     combineOptions(highRankOptions.get(keyNode), lowRankOptions.get(keyNode));
                 } else {
-                    if(highRankOptions.get(keyNode) != null) {
+                    if (highRankOptions.get(keyNode) != null) {
                         ((ObjectNode) lowRankOptions).set(keyNode, highRankOptions.get(keyNode));
                     }
                 }
@@ -358,16 +377,16 @@ public class TestsHelper {
         JsonNode flowPropertyVal = null;
         JsonNode stepPropertyVal = null;
         // check if flow artifact has property
-        if(flowData.get(propertyName) != null) {
+        if (flowData.get(propertyName) != null) {
             flowPropertyVal = flowData.get(propertyName);
         }
 
         // check if step artifact has the property
-        if(stepData.get(propertyName) != null) {
+        if (stepData.get(propertyName) != null) {
             stepPropertyVal = stepData.get(propertyName);
         }
 
-        if(stepPropertyVal !=  null && stepPropertyVal.isInt() && stepPropertyVal.intValue() == 0) {
+        if (stepPropertyVal != null && stepPropertyVal.isInt() && stepPropertyVal.intValue() == 0) {
             stepPropertyVal = flowPropertyVal;
         }
         return stepPropertyVal;

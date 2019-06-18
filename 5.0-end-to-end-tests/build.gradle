@@ -78,6 +78,7 @@ test {
     }
     include 'com/marklogic/integration/tests/DefaultMappingFlowTests.class'
     include 'com/marklogic/integration/tests/FlowEndToEndTests.class'
+    include 'com/marklogic/integration/tests/TemporalDocsTest.class'
 }
 
 task unDeployDHF (type: Exec) {
@@ -111,7 +112,6 @@ task importDataAsXML(type: com.marklogic.gradle.task.MlcpTask) {
     output_collections = "default-ingest"
     output_permissions = "rest-reader,read,rest-writer,update"
     output_uri_replace = new File("").absolutePath + "/" + input_file_path + "/" + ",'/xml/'"
-    document_type = "xml"
     transform_module =  "/data-hub/5/transforms/mlcp-flow-transform.sjs"
     transform_namespace = "http://marklogic.com/data-hub/mlcp-flow-transform"
     transform_param = 'options={"outputFormat":"xml"},flow-name=default-ingestion'
@@ -124,5 +124,24 @@ task importDataAsXML(type: com.marklogic.gradle.task.MlcpTask) {
     restrict_hosts = true
 }
 
+task importTemporalData(type: com.marklogic.gradle.task.MlcpTask) {
+    classpath = configurations.mlcp
+    input_file_path = "input/orders/simple-docs/json"
+    input_file_type = "documents"
+    output_collections = "default-ingest"
+    output_permissions = "rest-reader,read,rest-writer,update"
+    output_uri_replace = new File("").absolutePath + "/" + input_file_path + "/" + ",'/json/'"
+    transform_module =  "/data-hub/5/transforms/mlcp-flow-transform.sjs"
+    transform_namespace = "http://marklogic.com/data-hub/mlcp-flow-transform"
+    transform_param = 'options={"outputFormat": "json","headers":{"systemStart": "2014-04-03T11:00:00Z", "systemEnd": "2014-04-03T11:00:00Z","validStart": "2014-04-03T11:00:00Z", "validEnd": "2014-04-03T11:00:01Z"}},flow-name=default-ingestion'
+    command = "IMPORT"
+    mode = "local"
+    host = mlHost
+    port = 8010
+    username = "flow-operator"
+    password = "flow-operator"
+    restrict_hosts = true
+    temporal_collection = "temporal-collection-ingest"
+}
 test.dependsOn("hubInit", "mlDeploy")
 //test.finalizedBy("unDeployDHF")

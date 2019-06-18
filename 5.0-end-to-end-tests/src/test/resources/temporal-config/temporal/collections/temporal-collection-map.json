@@ -1,0 +1,6 @@
+{
+	"collection-name": "temporal-collection-map",
+	"system-axis": "system",
+	"valid-axis": "valid",
+	"option": ["updates-safe"]
+}

@@ -1,0 +1,14 @@
+{
+  "mapping": {
+    "name": "OrderMapping1",
+    "version": 1
+  },
+  "sourceQuery": "cts.collectionQuery('temporal-collection-ingest')",
+  "sourceDatabase": "data-hub-STAGING",
+  "targetDatabase": "data-hub-FINAL",
+  "collections": [
+    "default-mapping",
+    "temporal-collection-map",
+    "mdm-content"
+  ]
+}
