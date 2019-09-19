@@ -15,7 +15,7 @@ plugins {
     id "java-gradle-plugin"
     id 'org.springframework.boot' version '2.1.3.RELEASE'
     id "io.spring.dependency-management" version "1.0.7.RELEASE"
-    id 'com.marklogic.ml-data-hub' version '5.0.0'
+    id 'com.marklogic.ml-data-hub' version '5.0.2'
 }
 
 apply plugin: "com.marklogic.ml-data-hub"
