@@ -448,8 +448,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -476,8 +476,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-authorities"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -503,8 +503,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(m.getXml("/manage/v2/certificate-templates"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -530,8 +530,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/certificate-templates"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -558,8 +558,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/protected-paths"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -585,8 +585,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         m.setManageConfig(mc)
         ResourcesFragment rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/query-rolesets"))
         int size = rf.getResourceCount()
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -637,8 +637,8 @@ class E2EDeploymentTasksTest extends BaseTest {
         rf = new ResourcesFragment(getManageClient().getXml("/manage/v2/certificate-templates"))
         int ctCount = rf.getResourceCount()
 
-        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlHubAdminUserName"))
-        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlHubAdminUserPassword"))
+        updatePropertiesFile("mlManageUsername", getPropertyFromPropertiesFile("mlFlowDeveloperUserName"))
+        updatePropertiesFile("mlManagePassword", getPropertyFromPropertiesFile("mlFlowDeveloperPassword"))
         hubConfig().refreshProject(p, true)
 
         then:
@@ -818,7 +818,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployUsers').outcome == SUCCESS
         assert (secUser.userName.equals(getPropertyFromPropertiesFile("mlSecConfUsername")))
-        assert (secUser.role.contains(getPropertyFromPropertiesFile("mlHubUserRole")))
+        assert (secUser.role.contains(getPropertyFromPropertiesFile("mlFlowOperatorUserName")))
     }
 
     def "test deploy triggers from hub-internal-config directory" () {
@@ -836,7 +836,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployTriggers').outcome == SUCCESS
         // There are already 3 docs in the triggers database
-        assert (size == 4)
+        assert (size == 6)
     }
 
     def "test deploy triggers from ml-config directory" () {
@@ -853,7 +853,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployTriggers').outcome == SUCCESS
-        assert (size == 5)
+        assert (size == 7)
     }
 
     def "test deploy triggers from custom ml-config/databases/(name of triggers database)/triggers directory" () {
@@ -875,7 +875,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlDeployTriggers').outcome == SUCCESS
-        assert (size == 6)
+        assert (size == 8)
     }
 
     def "test deploy schemas from ml-schemas" () {
@@ -894,7 +894,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlLoadSchemas').outcome == SUCCESS
-        assert (docCount == 3)
+        assert (docCount == 5)
     }
     
     def "test deploy schemas from src/main/hub-internal-config/schemas" () {
@@ -935,7 +935,7 @@ class E2EDeploymentTasksTest extends BaseTest {
         then:
         notThrown(UnexpectedBuildFailure)
         result.task(':mlReloadSchemas').outcome == SUCCESS
-        assert (docCount == 3)
+        assert (docCount == 5)
         // To verify bug DHFPROD-1675 (mlReloadSchemas deleting files from mlFinalDb). 
         assert (finalDbDocCount == getFinalDocCount())
     }
